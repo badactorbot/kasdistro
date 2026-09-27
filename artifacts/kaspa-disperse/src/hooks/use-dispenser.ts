@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { resolveApiBase } from '@/lib/api-base';
 import { SERVICE_FEE_KAS } from '@/lib/dispenser/constants';
-import { kaspaApiBase } from '@/lib/dispenser/api';
-import {
-  extractWalletAddresses,
-  KASPA_WALLETS,
-  waitForWalletProvider,
-  type WalletAccount,
-} from '@/lib/dispenser/wallets';
+import { KASPA_WALLETS, type WalletAccount } from '@/lib/dispenser/wallets';
 
 export interface Recipient {
   address: string;
@@ -35,7 +30,7 @@ function sompiToKas(sompi: string) {
 }
 
 async function buildDispersalReview(senderAddress: string, recipients: Recipient[]) {
-  const apiBase = kaspaApiBase();
+  const apiBase = resolveApiBase();
   const request = () =>
     fetch(`${apiBase}/api/kaspa/build-pskt`, {
       method: 'POST',
@@ -113,17 +108,8 @@ export function useDispenser() {
       setInstalledMap(map);
     };
     check();
-    const onReady = () => check();
-    const poll = window.setInterval(check, 400);
-    const stop = window.setTimeout(() => window.clearInterval(poll), 8000);
-    window.addEventListener('kasware#initialized', onReady);
-    window.addEventListener('kastle#initialized', onReady);
-    return () => {
-      window.clearInterval(poll);
-      window.clearTimeout(stop);
-      window.removeEventListener('kasware#initialized', onReady);
-      window.removeEventListener('kastle#initialized', onReady);
-    };
+    const t = setTimeout(check, 600);
+    return () => clearTimeout(t);
   }, [isWalletModalOpen]);
 
   const handleParseInput = useCallback((text: string) => {
@@ -169,39 +155,22 @@ export function useDispenser() {
     setWalletLoading(wallet.id);
     try {
       if (wallet.type === 'extension') {
-        const provider = wallet.getProvider
-          ? await waitForWalletProvider(wallet.getProvider)
-          : null;
-        if (!provider) {
-          throw new Error(
-            `${wallet.name} is not available in this tab. Install the extension, unlock it, then try again.`,
-          );
-        }
-        let result: unknown;
-        if (typeof provider.requestAccounts === 'function') result = await provider.requestAccounts();
-        else if (typeof provider.connect === 'function') result = await provider.connect();
-        else if (typeof provider.getAccounts === 'function') result = await provider.getAccounts();
-        else throw new Error(`${wallet.name} does not expose a connect method.`);
-        const addresses = extractWalletAddresses(result);
-        if (!addresses.length) throw new Error('No account returned from wallet.');
-        setAccount({
-          address: addresses[0],
-          walletId: wallet.id,
-          walletName: wallet.name,
-          provider,
-        });
+        const provider = wallet.getProvider ? wallet.getProvider() : null;
+        if (!provider) throw new Error(`${wallet.name} is not installed.`);
+        let accounts: unknown[] = [];
+        if (typeof provider.requestAccounts === 'function') accounts = await provider.requestAccounts();
+        else if (typeof provider.connect === 'function') accounts = await provider.connect();
+        else if (typeof provider.getAccounts === 'function') accounts = await provider.getAccounts();
+        if (!accounts?.length) throw new Error('No account returned from wallet.');
+        const first = accounts[0] as string | { address: string };
+        const addr = typeof first === 'string' ? first : first.address;
+        setAccount({ address: addr, walletId: wallet.id, walletName: wallet.name, provider });
         setIsWalletModalOpen(false);
       } else {
         window.open(wallet.downloadUrl, '_blank');
       }
     } catch (err: unknown) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : typeof err === 'string'
-            ? err
-            : 'Failed to connect.';
-      setWalletError(message);
+      setWalletError(err instanceof Error ? err.message : 'Failed to connect.');
     } finally {
       setWalletLoading(null);
     }

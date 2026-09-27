@@ -44,12 +44,10 @@ export default function KineticGrid({
   children,
   className,
   globalColor = 'default',
-  pinned = false,
 }: {
   children?: ReactNode;
   className?: string;
   globalColor?: 'default' | 'monochrome';
-  pinned?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -280,9 +278,10 @@ export default function KineticGrid({
     if (!canvas || !container) return;
 
     const setSize = () => {
+      const rect = container.getBoundingClientRect();
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const w = Math.max(1, Math.floor(pinned ? window.innerWidth : container.getBoundingClientRect().width));
-      const h = Math.max(1, Math.floor(pinned ? window.innerHeight : container.getBoundingClientRect().height));
+      const w = Math.max(1, Math.floor(rect.width));
+      const h = Math.max(1, Math.floor(rect.height));
       canvas.width = Math.floor(w * dpr);
       canvas.height = Math.floor(h * dpr);
       canvas.style.width = `${w}px`;
@@ -293,8 +292,8 @@ export default function KineticGrid({
     };
 
     setSize();
-    const ro = pinned ? null : new ResizeObserver(setSize);
-    if (ro) ro.observe(container);
+    const ro = new ResizeObserver(setSize);
+    ro.observe(container);
     window.addEventListener('resize', setSize);
 
     const localPoint = (e: MouseEvent): Point => {
@@ -321,46 +320,32 @@ export default function KineticGrid({
       });
     };
 
-    const moveTarget = pinned ? window : container;
-    moveTarget.addEventListener('mousemove', onMouseMove);
-    if (!pinned) {
-      container.addEventListener('mouseleave', onMouseLeave);
-      container.addEventListener('click', onClick);
-    } else {
-      window.addEventListener('click', onClick);
-    }
+    container.addEventListener('mousemove', onMouseMove);
+    container.addEventListener('mouseleave', onMouseLeave);
+    container.addEventListener('click', onClick);
     rafRef.current = requestAnimationFrame(animate);
 
     return () => {
-      ro?.disconnect();
+      ro.disconnect();
       window.removeEventListener('resize', setSize);
-      moveTarget.removeEventListener('mousemove', onMouseMove);
+      container.removeEventListener('mousemove', onMouseMove);
       container.removeEventListener('mouseleave', onMouseLeave);
       container.removeEventListener('click', onClick);
-      window.removeEventListener('click', onClick);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
     };
-  }, [animate, pinned]);
+  }, [animate]);
 
   return (
     <div
       ref={containerRef}
       className={cn(
-        'relative w-full',
-        pinned ? 'min-h-dvh overflow-visible' : 'h-full min-h-full overflow-hidden',
+        'relative w-full min-h-[min(100vh,820px)] overflow-hidden',
         globalColor === 'monochrome' ? 'bg-[#000000]' : 'bg-[#060a0e]',
-        pinned && 'bg-transparent',
         className,
       )}
     >
-      <canvas
-        ref={canvasRef}
-        className={cn(
-          'z-0 pointer-events-none',
-          pinned ? 'fixed inset-0 w-screen h-dvh' : 'absolute inset-0 w-full h-full',
-        )}
-      />
-      <div className="relative z-10 w-full min-h-full">{children}</div>
+      <canvas ref={canvasRef} className="absolute inset-0 w-full h-full z-0 pointer-events-none" />
+      <div className="relative z-10 w-full h-full">{children}</div>
     </div>
   );
 }

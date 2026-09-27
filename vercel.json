@@ -5,10 +5,6 @@
   "outputDirectory": "artifacts/kaspa-disperse/dist/public",
   "rewrites": [
     {
-      "source": "/api/app/:path*",
-      "destination": "https://kcc-20-kron-trading-bot.replit.app/api/app/:path*"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

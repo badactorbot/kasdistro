@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { blake2b } from '@noble/hashes/blake2.js';
 import { estimateTransactionFee } from '../lib/kcc20-fee.js';
-import { inspectTestnetToken } from '../lib/distributor-poc/testnet-preflight.mjs';
 import {
   getCompletedKrc20Snapshot,
   startKrc20Index,
@@ -19,21 +18,10 @@ const KRON_INDEXER_API = 'https://idx.kron.technology/v1/kcc20';
 const HOLDER_PAGE_LIMIT = 1000;
 const KASPA_BURN_ADDRESS = 'kaspa:qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqkx9awp4e';
 
-// Research-only testnet preflight. This endpoint cannot create or send transactions.
-router.get('/testnet/inspect', async (req, res) => {
-  const address = req.query.address;
-  const ticker = req.query.ticker;
-  if (typeof address !== 'string' || !/^kaspatest:[a-z0-9]{50,110}$/.test(address) ||
-    typeof ticker !== 'string' || !/^[a-zA-Z0-9]{1,24}$/.test(ticker)) {
-    return res.status(400).json({ error: 'A testnet wallet address and token ticker are required.' });
-  }
-  try {
-    return res.json(await inspectTestnetToken(address, ticker));
-  } catch (error) {
-    return res.status(502).json({ error: error instanceof Error ? error.message : 'Testnet preflight failed.' });
-  }
+// The KAS distributor keeps its token-holder lookup, but no token payout bot.
+router.use(['/kcc20/*path', '/build-kcc20-transfer'], (_req, res) => {
+  res.status(404).json({ error: 'Not found' });
 });
-
 function isEligibleHolderAddress(address: unknown): address is string {
   return typeof address === 'string'
     && address.startsWith('kaspa:')
@@ -48,61 +36,91 @@ function upstreamErrorMessage(data: any, fallback: string): string {
   return fallback;
 }
 
+async function fetchKronRegistryToken(tokenId: string): Promise<{ tick: string } | null> {
+  const response = await fetch(`${KRON_API}/api/registry/tokens`, {
+    headers: { Accept: 'application/json', 'User-Agent': 'kasdistro/1.0' },
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!response.ok) throw new Error('KRON token registry lookup failed.');
+  const data: any = await response.json();
+  const token = (Array.isArray(data?.tokens) ? data.tokens : []).find((entry: any) =>
+    [entry?.covenantId, entry?.cp?.tokenCovid, entry?.native?.tokenCovid]
+      .some(value => typeof value === 'string' && value.toLowerCase() === tokenId));
+  return typeof token?.tick === 'string' && /^[a-zA-Z0-9]{1,32}$/.test(token.tick)
+    ? { tick: token.tick.toUpperCase() }
+    : null;
+}
+
 async function fetchKronHolderAddresses(tokenId: string) {
-  const registryResponse = await fetch(`${KRON_API}/api/registry/tokens`, {
+  const registryToken = await fetchKronRegistryToken(tokenId);
+  if (!registryToken) return null;
+
+  const ticker = registryToken.tick;
+  const encodedTicker = encodeURIComponent(ticker);
+  // KRON defaults to 50 holders per response. Exhaust the paginated list
+  // before building a recipient set; a single successful page is not a snapshot.
+  const pageSize = 50;
+  const holderRows: any[] = [];
+  const seenAddresses = new Set<string>();
+  let reportedHolderCount: number | null = null;
+  let exhausted = false;
+  for (let offset = 0; offset < 50000; offset += pageSize) {
+    const holdersResponse = await fetch(
+      `${KRON_INDEXER_API}/token/${encodedTicker}/holders?limit=${pageSize}&offset=${offset}`,
+      { headers: { Accept: 'application/json', 'User-Agent': 'kasdistro/1.0' } },
+    );
+    const holdersData: any = await holdersResponse.json();
+    if (!holdersResponse.ok) {
+      throw new Error(upstreamErrorMessage(holdersData, `KRON holder lookup failed for ${ticker}.`));
+    }
+    if (!Array.isArray(holdersData?.result)) {
+      throw new Error(`KRON returned an invalid holder page for ${ticker}.`);
+    }
+    const pageCount = Number(holdersData.holderTotal);
+    if (Number.isSafeInteger(pageCount) && pageCount >= 0) {
+      if (reportedHolderCount !== null && reportedHolderCount !== pageCount) {
+        throw new Error(`KRON holder count changed while importing ${ticker}. Please retry.`);
+      }
+      reportedHolderCount = pageCount;
+    }
+    for (const holder of holdersData.result) {
+      if (typeof holder?.address !== 'string' || seenAddresses.has(holder.address)) {
+        throw new Error(`KRON returned duplicate or invalid holder records for ${ticker}. Please retry.`);
+      }
+      seenAddresses.add(holder.address);
+      holderRows.push(holder);
+    }
+    if (holdersData.result.length < pageSize) {
+      exhausted = true;
+      break;
+    }
+  }
+  if (!exhausted) throw new Error(`KRON holder list for ${ticker} exceeded the import limit.`);
+
+  const tokenResponse = await fetch(`${KRON_INDEXER_API}/token/${encodedTicker}`, {
     headers: { Accept: 'application/json', 'User-Agent': 'kasdistro/1.0' },
   });
-  const registryData: any = await registryResponse.json();
-  if (!registryResponse.ok) {
-    throw new Error(upstreamErrorMessage(registryData, 'KRON registry lookup failed.'));
-  }
-
-  const registryToken = (Array.isArray(registryData?.tokens) ? registryData.tokens : [])
-    .find((token: any) => {
-      const covenantIds = [
-        token?.covenantId,
-        token?.cp?.tokenCovid,
-        token?.native?.tokenCovid,
-      ].filter((value): value is string => typeof value === 'string');
-      return covenantIds.some(value => value.toLowerCase() === tokenId);
-    });
-
-  if (!registryToken?.tick) return null;
-
-  const ticker = String(registryToken.tick).toUpperCase();
-  const encodedTicker = encodeURIComponent(ticker);
-  const [holdersResponse, tokenResponse] = await Promise.all([
-    fetch(`${KRON_INDEXER_API}/token/${encodedTicker}/holders`, {
-      headers: { Accept: 'application/json', 'User-Agent': 'kasdistro/1.0' },
-    }),
-    fetch(`${KRON_INDEXER_API}/token/${encodedTicker}`, {
-      headers: { Accept: 'application/json', 'User-Agent': 'kasdistro/1.0' },
-    }),
-  ]);
-  const holdersData: any = await holdersResponse.json();
   const tokenData: any = await tokenResponse.json();
-
-  if (!holdersResponse.ok) {
-    throw new Error(upstreamErrorMessage(holdersData, `KRON holder lookup failed for ${ticker}.`));
-  }
   if (!tokenResponse.ok) {
     throw new Error(upstreamErrorMessage(tokenData, `KRON token lookup failed for ${ticker}.`));
   }
 
-  const holderRows = Array.isArray(holdersData?.result) ? holdersData.result : [];
   const tokenRow = Array.isArray(tokenData?.result) ? tokenData.result[0] : tokenData?.result;
   const expectedHolderCount = Number(tokenRow?.holderTotal);
-  if (Number.isFinite(expectedHolderCount) && holderRows.length < expectedHolderCount) {
+  const ordinaryHolders = holderRows.filter(holder => !holder.address.startsWith('covenant:'));
+  if (!Number.isSafeInteger(expectedHolderCount) || expectedHolderCount < 0 ||
+    (reportedHolderCount !== null && reportedHolderCount !== expectedHolderCount) ||
+    ordinaryHolders.length !== expectedHolderCount) {
     throw new Error(
-      `KRON reports ${expectedHolderCount.toLocaleString()} holders for ${ticker}, but its indexer returned only ${holderRows.length.toLocaleString()}. Import was stopped to prevent a partial distribution.`,
+      `KRON reports ${expectedHolderCount.toLocaleString()} holders for ${ticker}, but its indexer returned ${ordinaryHolders.length.toLocaleString()} ordinary holders. Import was stopped to prevent a partial distribution.`,
     );
   }
 
-  const addresses = [...new Set(
-    holderRows
-      .map((holder: any) => holder?.address)
-      .filter(isEligibleHolderAddress),
-  )];
+  const eligible = holderRows.filter((holder: any) => isEligibleHolderAddress(holder?.address));
+  if (eligible.some((holder: any) => !/^[1-9][0-9]*$/.test(String(holder?.balance ?? '')))) {
+    throw new Error(`KRON returned an invalid holder balance for ${ticker}.`);
+  }
+  const addresses = [...new Set(eligible.map((holder: any) => holder.address))];
   const excludedCovenantHolders = holderRows.filter(
     (holder: any) => typeof holder?.address === 'string' && holder.address.startsWith('covenant:'),
   ).length;
@@ -113,6 +131,7 @@ async function fetchKronHolderAddresses(tokenId: string) {
   return {
     ticker,
     addresses,
+    balances: eligible.map((holder: any) => ({ address: holder.address, balance: String(holder.balance) })),
     holderRecords: holderRows.length,
     excludedCovenantHolders,
     excludedBurnAddresses,
@@ -257,6 +276,45 @@ const COVENANT_OUTPUT_SOMPI = 50_000_000n; // 0.5 KAS
 
 // ── Routes ───────────────────────────────────────────────────────────────────
 
+// Read-only token identity lookup for outgoing distribution previews.
+router.get('/token-info/:tokenId', async (req, res): Promise<void> => {
+  const raw = Array.isArray(req.params.tokenId) ? req.params.tokenId[0] : req.params.tokenId;
+  if (!/^[0-9a-fA-F]{64}$/.test(raw)) {
+    res.status(400).json({ error: 'Enter a 64-character KCC-20 token ID.' });
+    return;
+  }
+  const tokenId = raw.toLowerCase();
+  try {
+    const response = await fetch(`${KCC20_API}/v1/tokens/${tokenId}`, {
+      headers: { Accept: 'application/json', 'User-Agent': 'kasdistro/1.0' },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (response.ok) {
+      const metadata: any = await response.json();
+      if (metadata?.token_id?.toLowerCase() !== tokenId ||
+        typeof metadata?.ticker !== 'string' || !/^[a-zA-Z0-9]{1,32}$/.test(metadata.ticker)) {
+        res.status(502).json({ error: 'Token service returned mismatched or incomplete token identity.' });
+        return;
+      }
+      res.json({ protocol: 'KCC-20', identifier: tokenId, ticker: metadata.ticker.toUpperCase() });
+      return;
+    }
+    if (response.status !== 404) {
+      res.status(502).json({ error: 'KCC-20 token lookup is unavailable. Try again later.' });
+      return;
+    }
+    const kronToken = await fetchKronRegistryToken(tokenId);
+    if (!kronToken) {
+      res.status(404).json({ error: 'Outgoing KCC-20 token ID was not found.' });
+      return;
+    }
+    res.json({ protocol: 'KCC-20', identifier: tokenId, ticker: kronToken.tick });
+  } catch (error) {
+    req.log.warn({ error }, 'Outgoing token lookup failed');
+    res.status(502).json({ error: 'Could not verify outgoing token ID. Try again later.' });
+  }
+});
+
 // Resolve current token holders into ordinary Kaspa recipient addresses.
 // A 64-hex identifier is treated as a KCC-20 token ID; all other valid
 // identifiers are treated as KRC-20 tickers.
@@ -279,6 +337,7 @@ router.get('/token-holders/:identifier', async (req, res) => {
     if (isKcc20) {
       const tokenId = identifier.toLowerCase();
       const addressSet = new Set<string>();
+      const balanceRows = new Map<string, string>();
       const seenCursors = new Set<string>();
       let cursor = '';
       let validationStatus: string | null = null;
@@ -304,6 +363,7 @@ router.get('/token-holders/:identifier', async (req, res) => {
                 identifier: tokenId,
                 ticker: kronHolders.ticker,
                 addresses: kronHolders.addresses,
+                balances: kronHolders.balances,
                 imported: kronHolders.addresses.length,
                 hasMore: false,
                 validationStatus: 'chain_verified',
@@ -322,31 +382,36 @@ router.get('/token-holders/:identifier', async (req, res) => {
           return;
         }
 
-        validationStatus = data?.validation?.status ?? validationStatus;
-        sourceDaa = data?.validation?.source_daa ?? sourceDaa;
-        if (
-          validationStatus
-          && !['valid', 'validated', 'complete', 'template_verified', 'verified'].includes(
-            String(validationStatus).toLowerCase(),
-          )
-        ) {
+        const pageStatus = String(data?.validation?.status ?? '').toLowerCase();
+        if (!['valid', 'validated', 'complete', 'template_verified', 'verified'].includes(pageStatus)) {
           res.status(409).json({
-            error: `KCC-20 indexer validation status is "${validationStatus}". Holder import was stopped.`,
+            error: `KCC-20 indexer validation status is "${pageStatus || 'missing'}". Holder import was stopped.`,
           });
           return;
         }
+        const pageDaa = data?.validation?.source_daa;
+        if (pageDaa == null || (sourceDaa !== null && String(pageDaa) !== sourceDaa)) {
+          throw new Error('Holder snapshot changed during pagination; import stopped.');
+        }
+        validationStatus = pageStatus;
+        sourceDaa = String(pageDaa);
 
-        for (const holder of Array.isArray(data?.holders) ? data.holders : []) {
+        if (!Array.isArray(data?.holders)) throw new Error('Holder service returned an invalid page.');
+        for (const holder of data.holders) {
           if (holder?.address === KASPA_BURN_ADDRESS) {
             excludedBurnAddresses += 1;
           }
           if (isEligibleHolderAddress(holder?.address)) {
+            if (!/^[1-9][0-9]*$/.test(String(holder.balance ?? '')) ||
+                balanceRows.has(holder.address)) throw new Error('Holder balances are invalid or repeated; import stopped.');
             addressSet.add(holder.address);
+            balanceRows.set(holder.address, String(holder.balance));
           }
         }
 
         const nextCursor = typeof data?.next_cursor === 'string' ? data.next_cursor : '';
-        if (!nextCursor || seenCursors.has(nextCursor) || nextCursor === cursor) break;
+        if (!nextCursor) break;
+        if (seenCursors.has(nextCursor) || nextCursor === cursor) throw new Error('Holder pagination repeated; import stopped.');
         seenCursors.add(nextCursor);
         cursor = nextCursor;
       } while (cursor);
@@ -380,6 +445,7 @@ router.get('/token-holders/:identifier', async (req, res) => {
         identifier: tokenId,
         ticker,
         addresses,
+        balances: addresses.map(address => ({ address, balance: balanceRows.get(address)! })),
         imported: addresses.length,
         hasMore: false,
         validationStatus,
@@ -544,9 +610,8 @@ router.get('/kcc20/token/:tick/address/:address/utxos', async (req, res) => {
 // ---------------------------------------------------------------------------
 // POST /api/kron/build-kcc20-transfer
 //
-// Builds a KCC-20 (covenant-based) token transfer transaction in
-// kaspa-wasm Transaction.serializeToSafeJSON() format, ready for
-// kasware.signPskt({ txJsonString, options: { signInputs } }).
+// Builds a KCC-20 (covenant-based) token transfer in the flat Safe JSON
+// format accepted by KasWare's Transaction.deserializeFromSafeJSON().
 //
 // Body:
 //   senderAddress  – kaspa:q... address of the sender
@@ -562,15 +627,29 @@ router.get('/kcc20/token/:tick/address/:address/utxos', async (req, res) => {
 // ---------------------------------------------------------------------------
 router.post('/build-kcc20-transfer', async (req, res) => {
   try {
-    const { senderAddress, recipients, tick } = req.body as {
+    const { senderAddress, recipients, tick, excludedOutpoints = [] } = req.body as {
       senderAddress: string;
       recipients: Array<{ address: string; amount: string }>;
       tick: string;
+      excludedOutpoints?: Array<{ transactionId: string; index: number }>;
     };
 
-    if (!senderAddress || !recipients?.length || !tick) {
+    if (!senderAddress || !Array.isArray(recipients) || !recipients.length || !tick) {
       return res.status(400).json({ error: 'senderAddress, recipients, and tick are required' });
     }
+    // Two recipients leave room for both token and KAS change within the
+    // covenant's four-output ceiling.
+    if (recipients.length > 2 || !/^[a-zA-Z0-9]{1,32}$/.test(tick) ||
+      recipients.some(r => !r || !/^kaspa:[a-z0-9]+$/.test(r.address) ||
+        !/^[1-9]\d*$/.test(r.amount) || BigInt(r.amount) > 18446744073709551615n) ||
+      !Array.isArray(excludedOutpoints) || excludedOutpoints.some(o =>
+        !o || !/^[a-fA-F0-9]{64}$/.test(o.transactionId) || !Number.isSafeInteger(o.index) || o.index < 0)) {
+      return res.status(400).json({ error: 'Invalid KCC-20 transfer: use up to 2 mainnet recipients with positive whole-token amounts.' });
+    }
+    const excluded = new Set(excludedOutpoints.map(o => `${o.transactionId.toLowerCase()}:${o.index}`));
+    const available = (u: any) => !excluded.has(
+      `${String(u.outpoint?.transactionId ?? u.transactionId ?? '').toLowerCase()}:${Number(u.outpoint?.index ?? u.index ?? 0)}`,
+    );
 
     // ── 1. Fetch KCC-20 UTXOs for sender ──────────────────────────────────
     const kronResp = await fetch(
@@ -580,7 +659,7 @@ router.post('/build-kcc20-transfer', async (req, res) => {
       return res.status(502).json({ error: `Kron indexer returned ${kronResp.status} for UTXO list` });
     }
     const kronData = await kronResp.json() as any;
-    const kcc20Utxos: any[] = Array.isArray(kronData.result) ? kronData.result : (Array.isArray(kronData) ? kronData : []);
+    const kcc20Utxos: any[] = (Array.isArray(kronData.result) ? kronData.result : (Array.isArray(kronData) ? kronData : [])).filter(available);
 
     if (kcc20Utxos.length === 0) {
       return res.status(400).json({ error: `No ${tick} UTXOs found for ${senderAddress}` });
@@ -657,7 +736,7 @@ router.post('/build-kcc20-transfer', async (req, res) => {
 
     // Prefer a single UTXO large enough for the fee (simplest transaction).
     // If none qualifies, combine the largest UTXOs until we have enough.
-    const sortedKas = [...kasUtxos].sort((a, b) => {
+    const sortedKas = kasUtxos.filter(available).sort((a, b) => {
       const diff = BigInt(b.utxoEntry?.amount ?? 0) - BigInt(a.utxoEntry?.amount ?? 0);
       return diff > 0n ? 1 : diff < 0n ? -1 : 0;
     });
@@ -868,8 +947,7 @@ router.post('/build-kcc20-transfer', async (req, res) => {
       effectiveFee = dynamicFee;
     }
 
-    // ── 10. Assemble Transaction JSON (kaspa-wasm serializeToSafeJSON format) ─
-    // This format is what kasware.signPskt expects.
+    // ── 10. Assemble transaction details ───────────────────────────────────
     const inputs: any[] = [];
 
     // KRON covenant inputs — include redeemScript so the wallet can sign P2SH.
@@ -952,11 +1030,43 @@ router.post('/build-kcc20-transfer', async (req, res) => {
     // All inputs need to be signed
     const inputIndicesToSign = inputs.map((_, i) => i);
 
+    // KasWare's Safe JSON is not the nested RPC format above. Its inputs
+    // contain transactionId/index/utxo at the top level, and SPKs are a
+    // version-prefixed hex string rather than { version, script } objects.
+    // Passing RPC-style previousOutpoint makes signPskt reject the JSON with
+    // "missing field transactionId" before it even opens a signing dialog.
+    const walletTx = {
+      ...txJson,
+      inputs: inputs.map(input => ({
+        transactionId: input.previousOutpoint.transactionId,
+        index: input.previousOutpoint.index,
+        sequence: input.sequence,
+        sigOpCount: input.sigOpCount,
+        signatureScript: input.signatureScript,
+        utxo: {
+          address: input.redeemScript
+            ? encodeKaspaAddress(8, blake2b256(Buffer.from(input.redeemScript, 'hex')))
+            : senderAddress,
+          amount: input.utxoEntry.amount,
+          scriptPublicKey: input.utxoEntry.scriptPublicKey.version.toString(16).padStart(4, '0')
+            + input.utxoEntry.scriptPublicKey.script,
+          blockDaaScore: input.utxoEntry.blockDaaScore,
+          isCoinbase: input.utxoEntry.isCoinbase,
+        },
+      })),
+      outputs: outputs.map(output => ({
+        value: output.value,
+        scriptPublicKey: output.scriptPublicKey.version.toString(16).padStart(4, '0')
+          + output.scriptPublicKey.script,
+      })),
+    };
+
     return res.json({
-      txJsonString: JSON.stringify(txJson),
+      txJsonString: JSON.stringify(walletTx),
       inputIndicesToSign,
       fee: String(effectiveFee),
       totalAmount: String(totalNeeded),
+      inputOutpoints: inputs.map(i => i.previousOutpoint),
     });
   } catch (err: any) {
     console.error('[kron] build-kcc20-transfer error:', err);
