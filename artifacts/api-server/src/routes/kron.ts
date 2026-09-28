@@ -344,37 +344,47 @@ router.get('/token-holders/:identifier', async (req, res) => {
       let sourceDaa: string | null = null;
       let excludedBurnAddresses = 0;
 
+      const sendKronHolders = async () => {
+        const kronHolders = await fetchKronHolderAddresses(tokenId);
+        if (!kronHolders) return false;
+        res.json({
+          protocol: 'KCC-20',
+          identifier: tokenId,
+          ticker: kronHolders.ticker,
+          addresses: kronHolders.addresses,
+          balances: kronHolders.balances,
+          imported: kronHolders.addresses.length,
+          hasMore: false,
+          validationStatus: 'chain_verified',
+          source: 'KRON indexer',
+          holderRecords: kronHolders.holderRecords,
+          excludedCovenantHolders: kronHolders.excludedCovenantHolders,
+          excludedBurnAddresses: kronHolders.excludedBurnAddresses,
+          graduated: kronHolders.graduated,
+        });
+        return true;
+      };
+
       do {
         const query = new URLSearchParams({ limit: String(HOLDER_PAGE_LIMIT) });
         if (cursor) query.set('after_owner', cursor);
-        const upstream = await fetch(
-          `${KCC20_API}/v1/tokens/${tokenId}/holders?${query}`,
-          { headers: { Accept: 'application/json', 'User-Agent': 'kasdistro/1.0' } },
-        );
+        let upstream: Response;
+        try {
+          upstream = await fetch(
+            `${KCC20_API}/v1/tokens/${tokenId}/holders?${query}`,
+            { headers: { Accept: 'application/json', 'User-Agent': 'kasdistro/1.0' } },
+          );
+        } catch (error) {
+          req.log.warn({ error }, 'KCC-20 holder indexer fetch failed');
+          if (await sendKronHolders()) return;
+          throw error;
+        }
         const data: any = await upstream.json();
 
         if (!upstream.ok) {
           const upstreamCode = data?.error?.code;
           if (upstream.status === 404 && upstreamCode === 'not_found') {
-            const kronHolders = await fetchKronHolderAddresses(tokenId);
-            if (kronHolders) {
-              res.json({
-                protocol: 'KCC-20',
-                identifier: tokenId,
-                ticker: kronHolders.ticker,
-                addresses: kronHolders.addresses,
-                balances: kronHolders.balances,
-                imported: kronHolders.addresses.length,
-                hasMore: false,
-                validationStatus: 'chain_verified',
-                source: 'KRON indexer',
-                holderRecords: kronHolders.holderRecords,
-                excludedCovenantHolders: kronHolders.excludedCovenantHolders,
-                excludedBurnAddresses: kronHolders.excludedBurnAddresses,
-                graduated: kronHolders.graduated,
-              });
-              return;
-            }
+            if (await sendKronHolders()) return;
           }
           res.status(upstream.status).json({
             error: upstreamErrorMessage(data, 'KCC-20 holder lookup failed.'),
