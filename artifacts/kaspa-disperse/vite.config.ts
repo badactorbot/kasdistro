@@ -2,8 +2,7 @@ import path from 'path';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
-
-import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
+import { lookupTokenHolders } from '../../api/_lib/token-holders.ts';
 
 const rawPort = process.env.PORT;
 
@@ -32,20 +31,35 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
-    runtimeErrorOverlay(),
-    ...(process.env.NODE_ENV !== 'production' &&
-    process.env.REPL_ID !== undefined
-      ? [
-          await import('@replit/vite-plugin-cartographer').then((m) =>
-            m.cartographer({
-              root: path.resolve(import.meta.dirname, '..'),
-            }),
-          ),
-          await import('@replit/vite-plugin-dev-banner').then((m) =>
-            m.devBanner(),
-          ),
-        ]
-      : []),
+    {
+      name: 'kasdistro-holder-api',
+      configureServer(server) {
+        server.middlewares.use(async (req, res, next) => {
+          const url = req.url?.split('?')[0] ?? '';
+          const match = url.match(/^\/api\/kron\/token-holders\/([^/]+)$/);
+          if (!match || req.method !== 'GET') {
+            next();
+            return;
+          }
+          try {
+            const identifier = decodeURIComponent(match[1]);
+            const result = await lookupTokenHolders(identifier);
+            res.statusCode = result.status;
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.end(JSON.stringify(result.body));
+          } catch (error: any) {
+            res.statusCode = 502;
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
+            res.end(
+              JSON.stringify({
+                error: 'Token holder indexer is currently unavailable.',
+                detail: error?.message ?? String(error),
+              }),
+            );
+          }
+        });
+      },
+    },
   ],
   resolve: {
     alias: {

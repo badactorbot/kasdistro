@@ -228,7 +228,7 @@ export default function DistroApp() {
   };
 
   const handleImportTokenHolders = async () => {
-    const identifier = tokenIdentifier.trim();
+    const identifier = tokenIdentifier.trim().replace(/[;,.\s]+$/g, '');
     const amount = Number(kasPerHolder);
     holderImportAbortRef.current?.abort();
     if (holderImportTimerRef.current !== null) {
