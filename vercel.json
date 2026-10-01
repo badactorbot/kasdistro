@@ -5,8 +5,13 @@
   "outputDirectory": "artifacts/kaspa-disperse/dist/public",
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!api/).*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "functions": {
+    "api/kron/token-holders/[identifier].ts": {
+      "maxDuration": 60
+    }
+  }
 }
