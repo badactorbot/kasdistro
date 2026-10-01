@@ -8,7 +8,6 @@ import DistroApp from '@/pages/distro-app';
 import Kaspaper from '@/pages/kaspaper';
 import VolumeBot from '@/pages/volume-bot';
 import TestnetLab from '@/pages/testnet-lab';
-import Kcc20Distributor from '@/pages/kcc20-distributor';
 import NotFound from '@/pages/not-found';
 import {
   Route,
@@ -29,7 +28,6 @@ function Router() {
         <Route path="/kaspaper" component={Kaspaper} />
         <Route path="/volume-bot" component={VolumeBot} />
         <Route path="/testnet-lab" component={TestnetLab} />
-        <Route path="/kcc20" component={Kcc20Distributor} />
         <Route component={NotFound} />
       </Switch>
     </RoutedErrorBoundary>

@@ -579,21 +579,6 @@ export default function DistroApp() {
     <div className="relative min-h-[min(92dvh,1100px)] overflow-hidden rounded-2xl bg-[#030914] flex flex-col z-10 selection:bg-primary/30 selection:text-white">
       <GridBackground />
 
-       <nav aria-label="Distribution type" className="max-w-6xl mx-auto w-full px-4 sm:px-6 pt-7">
-         <div className="inline-flex flex-wrap gap-1 rounded-xl border border-primary/20 bg-[#050c18]/90 p-1">
-           <span aria-current="page" className="rounded-lg bg-primary px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-[#02050a]">
-             KAS DISTRO
-           </span>
-           <a
-             href="/kcc20"
-             data-testid="link-kcc20-distribution"
-             className="rounded-lg px-4 py-2.5 text-xs font-bold uppercase tracking-wide text-white/65 transition hover:bg-white/10 hover:text-white"
-           >
-             KCC20 DISTRO
-           </a>
-         </div>
-       </nav>
-
        {/* MAIN */}
       <main className="max-w-6xl mx-auto w-full px-4 sm:px-6 py-10 grid lg:grid-cols-12 gap-8 flex-1 items-stretch">
 

@@ -163,7 +163,6 @@ export function LandingLayout({
               <NavAnchor href="/#holder-rewards" className="hover:text-cyan-100">Holder Rewards</NavAnchor>
               <NavAnchor href="/kaspaper" className="hover:text-cyan-100">Kaspaper</NavAnchor>
               <NavAnchor href="/volume-bot" className="hover:text-cyan-100">Volume Bot</NavAnchor>
-               <NavAnchor href="/kcc20" className="hover:text-cyan-100">KCC-20</NavAnchor>
                <NavAnchor href="/testnet-lab" className="hover:text-cyan-100">Testnet Lab</NavAnchor>
             </div>
             <SocialLinks />
