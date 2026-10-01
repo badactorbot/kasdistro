@@ -242,6 +242,12 @@ export default function Home() {
       setHolderImportError('Enter a token ticker or a 64-character holder token ID.');
       return;
     }
+    if (/^[0-9a-fA-F]+$/.test(identifier) && identifier.length !== 64) {
+      setHolderImportError(
+        `That token ID is ${identifier.length} characters. KCC-20 IDs are 64 hex characters — paste the full ID (the field can clip the end).`,
+      );
+      return;
+    }
     if (!Number.isFinite(amount) || amount <= 0) {
       setHolderImportError('Enter a valid KAS amount per holder.');
       return;
@@ -254,7 +260,6 @@ export default function Home() {
       const endpoint = `${resolveApiBase()}/api/kron/token-holders/${encodeURIComponent(identifier)}`;
       while (true) {
         const response = await fetch(endpoint, {
-          headers: { Accept: 'application/json' },
           cache: 'no-store',
           signal: abortController.signal,
         });
@@ -295,7 +300,13 @@ export default function Home() {
         break;
       }
     } catch (err: any) {
-      if (err?.name !== 'AbortError') setHolderImportError(err?.message || 'Could not load token holders.');
+      if (err?.name === 'AbortError') return;
+      const networkFail = err instanceof TypeError || /failed to fetch|networkerror|load failed/i.test(String(err?.message ?? ''));
+      setHolderImportError(
+        networkFail
+          ? 'Holder import never reached this site’s API. Hard-refresh, paste the full 64-character token ID or ticker, then try again.'
+          : err?.message || 'Could not load token holders.',
+      );
     } finally {
       if (holderImportAbortRef.current === abortController) {
         holderImportAbortRef.current = null;
@@ -602,6 +613,8 @@ export default function Home() {
                     value={tokenIdentifier}
                     onChange={(event) => setTokenIdentifier(event.target.value)}
                     placeholder="Token ticker or ID"
+                    spellCheck={false}
+                    autoComplete="off"
                     className="min-w-0 rounded-lg border border-white/10 bg-[#02050a] px-3 py-2.5 font-mono text-xs text-white placeholder:text-white/30 focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/40"
                   />
                   <input
@@ -623,7 +636,11 @@ export default function Home() {
                   </button>
                 </div>
                 <div className="mt-2 text-[10px] leading-relaxed text-white/35">
-                   Enter a ticker or supported 64-character token ID. Complete holder lists are imported only after every holder is indexed and reconciled.
+                   Enter a ticker or the full 64-character token ID
+                  {/^[0-9a-fA-F]+$/.test(tokenIdentifier.trim())
+                    ? ` (${tokenIdentifier.trim().length}/64 hex chars in the field).`
+                    : '.'}{' '}
+                  Complete holder lists are imported only after every holder is indexed and reconciled.
                 </div>
                 {holderIndexingStatus && (
                   <div

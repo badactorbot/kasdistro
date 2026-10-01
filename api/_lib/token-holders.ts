@@ -35,13 +35,24 @@ function jsonError(status: number, error: string, extra?: Record<string, unknown
   return { status, body: { error, ...extra } };
 }
 
-async function fetchJson(url: string, timeoutMs = 20000): Promise<{ ok: boolean; status: number; data: any }> {
-  const response = await fetch(url, {
-    headers: UPSTREAM_HEADERS,
-    signal: AbortSignal.timeout(timeoutMs),
-  });
-  const data = await response.json().catch(() => null);
-  return { ok: response.ok, status: response.status, data };
+async function fetchJson(url: string, timeoutMs = 12000): Promise<{ ok: boolean; status: number; data: any }> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, {
+      headers: UPSTREAM_HEADERS,
+      signal: controller.signal,
+    });
+    const data = await response.json().catch(() => null);
+    return { ok: response.ok, status: response.status, data };
+  } catch (error: any) {
+    if (error?.name === 'AbortError' || error?.name === 'TimeoutError') {
+      throw new Error(`Indexer request timed out after ${timeoutMs}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 async function fetchKronRegistryToken(tokenId: string): Promise<{ tick: string } | null> {
@@ -169,24 +180,29 @@ async function lookupKcc20Holders(tokenId: string): Promise<HolderLookupResult> 
     };
   };
 
+  const kronPromise = kronResult().catch(() => null);
+
   do {
     const query = new URLSearchParams({ limit: String(HOLDER_PAGE_LIMIT) });
     if (cursor) query.set('after_owner', cursor);
     let upstream: { ok: boolean; status: number; data: any };
     try {
-      upstream = await fetchJson(`${KCC20_API}/v1/tokens/${tokenId}/holders?${query}`);
+      upstream = await fetchJson(`${KCC20_API}/v1/tokens/${tokenId}/holders?${query}`, 8000);
     } catch {
-      const fallback = await kronResult();
+      const fallback = await kronPromise;
       if (fallback) return fallback;
-      throw new Error('KCC-20 holder indexer is unreachable.');
+      return jsonError(502, 'KCC-20 holder indexer is unreachable.');
     }
 
     if (!upstream.ok) {
       const upstreamCode = upstream.data?.error?.code;
-      if (upstream.status === 404 && upstreamCode === 'not_found') {
-        const fallback = await kronResult();
+      if (upstream.status === 404 && (upstreamCode === 'not_found' || !upstreamCode)) {
+        const fallback = await kronPromise;
         if (fallback) return fallback;
+        return jsonError(404, 'No KCC-20 token was found for that 64-character ID.');
       }
+      const fallback = await kronPromise;
+      if (fallback) return fallback;
       return jsonError(
         upstream.status,
         upstreamErrorMessage(upstream.data, 'KCC-20 holder lookup failed.'),
