@@ -1,5 +1,5 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { lookupTokenHolders } from '../_lib/token-holders';
+import { lookupTokenHolders } from '../../_lib/token-holders';
 
 export const config = {
   maxDuration: 60,
