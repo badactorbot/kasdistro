@@ -613,9 +613,9 @@ router.post('/push-tx', async (req, res) => {
     // camelCase (kaspa-wasm serializeToSafeJSON) and snake_case variants that
     // different wallet versions may emit.
     const resolveOutpoint = (inp: any) => {
-      const op = inp.previousOutpoint ?? inp.previous_outpoint ?? inp.outpoint ?? inp;
+      const op = inp.previousOutpoint ?? inp.previous_outpoint ?? inp.outpoint ?? {};
       const txId: string =
-        op.transactionId ?? op.transaction_id ?? op.txId ?? op.txid ?? '';
+        op.transactionId ?? op.transaction_id ?? op.transactionId ?? op.txId ?? op.txid ?? '';
       const idx: number = Number(op.index ?? op.outputIndex ?? 0);
       return { transactionId: txId, index: idx };
     };
@@ -637,13 +637,9 @@ router.post('/push-tx', async (req, res) => {
         // "amount" (signKaspaTransaction) or "value" (kaspa-wasm/signPskt) — accept both
         amount: Number(out.amount ?? out.value ?? 0),
         scriptPublicKey: {
-          version: typeof out.scriptPublicKey === 'string'
-            ? parseInt(out.scriptPublicKey.slice(0, 4), 16)
-            : out.scriptPublicKey?.version ?? 0,
-          // KasWare Safe JSON prefixes a four-hex-digit script version.
-          scriptPublicKey: typeof out.scriptPublicKey === 'string'
-            ? out.scriptPublicKey.slice(4)
-            : out.scriptPublicKey?.scriptPublicKey ?? out.scriptPublicKey?.script ?? '',
+          version: out.scriptPublicKey?.version ?? 0,
+          // Our build-tx uses 'script'; REST API expects 'scriptPublicKey'
+          scriptPublicKey: out.scriptPublicKey?.scriptPublicKey ?? out.scriptPublicKey?.script ?? '',
         },
       })),
       lockTime: Number(txData.lockTime ?? tx.lockTime ?? 0),
@@ -651,25 +647,16 @@ router.post('/push-tx', async (req, res) => {
     };
 
     // Validate: every input must have a non-empty transactionId before we submit
-    const badInput = submitTx.inputs.findIndex((i: { previousOutpoint: { transactionId: string; index: number }; signatureScript: string }) =>
-      !/^[a-fA-F0-9]{64}$/.test(i.previousOutpoint.transactionId) ||
-      !Number.isSafeInteger(i.previousOutpoint.index) || i.previousOutpoint.index < 0 ||
-      !/^[a-fA-F0-9]+$/.test(i.signatureScript));
+    const badInput = submitTx.inputs.findIndex((i: { previousOutpoint: { transactionId: string } }) => !i.previousOutpoint.transactionId);
     if (badInput !== -1) {
       // Log the raw signed input so we can see what field names the wallet used
       const rawInp = (tx.inputs ?? [])[badInput];
       console.error('[push-tx] input %d missing transactionId; raw keys:', badInput, Object.keys(rawInp ?? {}));
       console.error('[push-tx] raw previousOutpoint keys:', Object.keys(rawInp?.previousOutpoint ?? rawInp?.previous_outpoint ?? rawInp?.outpoint ?? {}));
       throw new Error(
-        `Signed transaction input ${badInput} is missing a valid outpoint or signature — nothing was submitted. ` +
+        `Signed transaction input ${badInput} is missing transactionId — wallet returned unexpected format. ` +
         `Raw outpoint keys: ${Object.keys(rawInp?.previousOutpoint ?? rawInp?.previous_outpoint ?? rawInp?.outpoint ?? {}).join(', ')}`,
       );
-    }
-    if (!submitTx.outputs.length || submitTx.outputs.some((output: { amount: number; scriptPublicKey: { version: number; scriptPublicKey: string } }) =>
-      !Number.isSafeInteger(output.amount) || output.amount <= 0 ||
-      !Number.isSafeInteger(output.scriptPublicKey.version) ||
-      !/^[a-fA-F0-9]+$/.test(output.scriptPublicKey.scriptPublicKey))) {
-      return res.status(400).json({ error: 'Signed transaction has invalid outputs. Nothing was submitted.' });
     }
 
     // Log the exact payload we send to Kaspa so we can diagnose format issues

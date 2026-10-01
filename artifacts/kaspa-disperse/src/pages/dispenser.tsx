@@ -42,7 +42,7 @@ function TransferStatus({ status }: { status: string }) {
   }
 }
 
-export default function Dispenser() {
+export default function Dispenser({ embedded = false }: { embedded?: boolean }) {
   const d = useDispenser();
   const [search, setSearch] = useState('');
 
@@ -68,17 +68,14 @@ export default function Dispenser() {
         ]
       : undefined;
 
-  return (
-    <ToolLayout
-      account={d.account}
-      onConnect={() => d.setIsWalletModalOpen(true)}
-      footerStats={footerStats}
-    >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+  const body = (
+      <div className={embedded ? 'px-4 sm:px-6 py-6' : 'max-w-7xl mx-auto px-4 sm:px-6 py-8'}>
+        {!embedded && (
         <div className="mb-8">
-          <h1 className="text-2xl font-bold text-white">Dispenser</h1>
+          <h1 className="text-2xl font-bold text-white">Distro</h1>
           <p className="text-sm text-zinc-500 mt-1">Upload recipients, review fees, and dispense KAS rewards.</p>
         </div>
+        )}
 
         <div className="grid lg:grid-cols-12 gap-6 lg:gap-8">
           {/* Input + table */}
@@ -350,7 +347,9 @@ export default function Dispenser() {
           </div>
         </div>
       </div>
+  );
 
+  const modal = (
       <WalletModal
         open={d.isWalletModalOpen}
         onClose={() => d.setIsWalletModalOpen(false)}
@@ -359,6 +358,25 @@ export default function Dispenser() {
         installedMap={d.installedMap}
         onConnect={d.handleConnectWallet}
       />
+  );
+
+  if (embedded) {
+    return (
+      <>
+        {body}
+        {modal}
+      </>
+    );
+  }
+
+  return (
+    <ToolLayout
+      account={d.account}
+      onConnect={() => d.setIsWalletModalOpen(true)}
+      footerStats={footerStats}
+    >
+      {body}
+      {modal}
     </ToolLayout>
   );
 }

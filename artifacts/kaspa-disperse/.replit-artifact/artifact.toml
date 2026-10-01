@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Kaspa Disperse"
+description = "A bulk KAS payment batcher for the Kaspa BlockDAG. Connects to Kaspa-compatible browser wallets (KasWare, Kastle, Nightly, Bitget), parses a list of recipient addresses and amounts, batches them into groups of 50 outputs per transaction, and executes bulk distribution in sequence."
+version = "1.0.0"
+id = "artifacts/kaspa-disperse"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22434
+
+[services.development]
+run = "pnpm --filter @workspace/kaspa-disperse run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/kaspa-disperse", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/kaspa-disperse/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22434"
+BASE_PATH = "/"

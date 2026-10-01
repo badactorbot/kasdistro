@@ -6,21 +6,48 @@
  * OpenAPI spec version: 0.1.0
  */
 import {
+  useMutation,
   useQuery
 } from '@tanstack/react-query';
 import type {
+  MutationFunction,
   QueryFunction,
   QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
   UseQueryOptions,
   UseQueryResult
 } from '@tanstack/react-query';
 
 import type {
-  HealthStatus
+  ActivationVerificationInput,
+  ActivityEntry,
+  BotConfigInput,
+  BotRunResult,
+  BotSetupInput,
+  BotState,
+  CovenantChangeInput,
+  ErrorResponse,
+  GetBotActivityParams,
+  HealthStatus,
+  InspectTestnetTokenParams,
+  KasWithdrawalInput,
+  KasWithdrawalPreparation,
+  KasWithdrawalResult,
+  KasWithdrawalSubmission,
+  LiveBuyPreview,
+  MarketSnapshot,
+  SimulationInput,
+  SimulationResult,
+  TestnetTokenInspection,
+  UserBotDashboard,
+  WalletChallenge,
+  WalletChallengeInput,
+  WalletVerificationInput
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
-import type { ErrorType } from '../custom-fetch';
+import type { ErrorType , BodyType } from '../custom-fetch';
 
 type AwaitedInput<T> = PromiseLike<T> | T;
 
@@ -45,6 +72,90 @@ const withQueryKey = <T extends object, K>(query: T, queryKey: K): T & { queryKe
   }
   return result;
 };
+
+export const getInspectTestnetTokenUrl = (params: InspectTestnetTokenParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/kron/testnet/inspect?${stringifiedParams}` : `/api/kron/testnet/inspect`
+}
+
+/**
+ * @summary Read-only testnet KCC-20 token preflight
+ */
+export const inspectTestnetToken = async (params: InspectTestnetTokenParams, options?: Parameters<typeof customFetch>[1]): Promise<TestnetTokenInspection> => {
+
+  return customFetch<TestnetTokenInspection>(getInspectTestnetTokenUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getInspectTestnetTokenQueryKey = (params?: InspectTestnetTokenParams,) => {
+    return [
+    `/api/kron/testnet/inspect`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getInspectTestnetTokenQueryOptions = <TData = Awaited<ReturnType<typeof inspectTestnetToken>>, TError = ErrorType<unknown>>(params: InspectTestnetTokenParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof inspectTestnetToken>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getInspectTestnetTokenQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof inspectTestnetToken>>> = ({ signal }) => inspectTestnetToken(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof inspectTestnetToken>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type InspectTestnetTokenQueryResult = NonNullable<Awaited<ReturnType<typeof inspectTestnetToken>>>
+export type InspectTestnetTokenQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Read-only testnet KCC-20 token preflight
+ */
+
+export function useInspectTestnetToken<TData = Awaited<ReturnType<typeof inspectTestnetToken>>, TError = ErrorType<unknown>>(
+ params: InspectTestnetTokenParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof inspectTestnetToken>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getInspectTestnetTokenQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getHealthCheckUrl = () => {
 
@@ -123,4 +234,1455 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
 
 
+
+export const getGetBotStateUrl = () => {
+
+
+
+
+  return `/api/bot/state`
+}
+
+/**
+ * @summary Get current bot state
+ */
+export const getBotState = async ( options?: Parameters<typeof customFetch>[1]): Promise<BotState> => {
+
+  return customFetch<BotState>(getGetBotStateUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBotStateQueryKey = () => {
+    return [
+    `/api/bot/state`
+    ] as const;
+    }
+
+
+export const getGetBotStateQueryOptions = <TData = Awaited<ReturnType<typeof getBotState>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBotState>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBotStateQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBotState>>> = ({ signal }) => getBotState({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBotState>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBotStateQueryResult = NonNullable<Awaited<ReturnType<typeof getBotState>>>
+export type GetBotStateQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get current bot state
+ */
+
+export function useGetBotState<TData = Awaited<ReturnType<typeof getBotState>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBotState>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBotStateQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateBotConfigUrl = () => {
+
+
+
+
+  return `/api/bot/config`
+}
+
+/**
+ * @summary Update bot strategy configuration
+ */
+export const updateBotConfig = async (botConfigInput: BotConfigInput, options?: Parameters<typeof customFetch>[1]): Promise<BotState> => {
+
+  return customFetch<BotState>(getUpdateBotConfigUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(botConfigInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateBotConfigMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBotConfig>>, TError,{data: BodyType<BotConfigInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateBotConfig>>, TError,{data: BodyType<BotConfigInput>}, TContext> => {
+
+const mutationKey = ['updateBotConfig'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateBotConfig>>, {data: BodyType<BotConfigInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateBotConfig(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateBotConfigMutationResult = NonNullable<Awaited<ReturnType<typeof updateBotConfig>>>
+    export type UpdateBotConfigMutationBody = BodyType<BotConfigInput>
+    export type UpdateBotConfigMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Update bot strategy configuration
+ */
+export const useUpdateBotConfig = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateBotConfig>>, TError,{data: BodyType<BotConfigInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateBotConfig>>,
+        TError,
+        {data: BodyType<BotConfigInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateBotConfigMutationOptions(options));
+    }
+
+export const getStartBotUrl = () => {
+
+
+
+
+  return `/api/bot/start`
+}
+
+/**
+ * @summary Start the configured bot
+ */
+export const startBot = async ( options?: Parameters<typeof customFetch>[1]): Promise<BotState> => {
+
+  return customFetch<BotState>(getStartBotUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getStartBotMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startBot>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startBot>>, TError,void, TContext> => {
+
+const mutationKey = ['startBot'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startBot>>, void> = () => {
+
+
+          return  startBot(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartBotMutationResult = NonNullable<Awaited<ReturnType<typeof startBot>>>
+
+    export type StartBotMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Start the configured bot
+ */
+export const useStartBot = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startBot>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startBot>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getStartBotMutationOptions(options));
+    }
+
+export const getStopBotUrl = () => {
+
+
+
+
+  return `/api/bot/stop`
+}
+
+/**
+ * @summary Stop the bot and cancel future scheduled orders
+ */
+export const stopBot = async ( options?: Parameters<typeof customFetch>[1]): Promise<BotState> => {
+
+  return customFetch<BotState>(getStopBotUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getStopBotMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stopBot>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof stopBot>>, TError,void, TContext> => {
+
+const mutationKey = ['stopBot'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof stopBot>>, void> = () => {
+
+
+          return  stopBot(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StopBotMutationResult = NonNullable<Awaited<ReturnType<typeof stopBot>>>
+
+    export type StopBotMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Stop the bot and cancel future scheduled orders
+ */
+export const useStopBot = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stopBot>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof stopBot>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getStopBotMutationOptions(options));
+    }
+
+export const getRunBotOnceUrl = () => {
+
+
+
+
+  return `/api/bot/run-once`
+}
+
+/**
+ * @summary Run the next strategy step in dry-run mode
+ */
+export const runBotOnce = async ( options?: Parameters<typeof customFetch>[1]): Promise<BotRunResult> => {
+
+  return customFetch<BotRunResult>(getRunBotOnceUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRunBotOnceMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runBotOnce>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runBotOnce>>, TError,void, TContext> => {
+
+const mutationKey = ['runBotOnce'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runBotOnce>>, void> = () => {
+
+
+          return  runBotOnce(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RunBotOnceMutationResult = NonNullable<Awaited<ReturnType<typeof runBotOnce>>>
+
+    export type RunBotOnceMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Run the next strategy step in dry-run mode
+ */
+export const useRunBotOnce = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runBotOnce>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof runBotOnce>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRunBotOnceMutationOptions(options));
+    }
+
+export const getGetBotActivityUrl = (params?: GetBotActivityParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/bot/activity?${stringifiedParams}` : `/api/bot/activity`
+}
+
+/**
+ * @summary Get recent bot activity
+ */
+export const getBotActivity = async (params?: GetBotActivityParams, options?: Parameters<typeof customFetch>[1]): Promise<ActivityEntry[]> => {
+
+  return customFetch<ActivityEntry[]>(getGetBotActivityUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBotActivityQueryKey = (params?: GetBotActivityParams,) => {
+    return [
+    `/api/bot/activity`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetBotActivityQueryOptions = <TData = Awaited<ReturnType<typeof getBotActivity>>, TError = ErrorType<unknown>>(params?: GetBotActivityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBotActivity>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBotActivityQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBotActivity>>> = ({ signal }) => getBotActivity(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBotActivity>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBotActivityQueryResult = NonNullable<Awaited<ReturnType<typeof getBotActivity>>>
+export type GetBotActivityQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get recent bot activity
+ */
+
+export function useGetBotActivity<TData = Awaited<ReturnType<typeof getBotActivity>>, TError = ErrorType<unknown>>(
+ params?: GetBotActivityParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBotActivity>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBotActivityQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMarketSnapshotUrl = () => {
+
+
+
+
+  return `/api/bot/market`
+}
+
+/**
+ * @summary Get the latest configured market snapshot
+ */
+export const getMarketSnapshot = async ( options?: Parameters<typeof customFetch>[1]): Promise<MarketSnapshot> => {
+
+  return customFetch<MarketSnapshot>(getGetMarketSnapshotUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMarketSnapshotQueryKey = () => {
+    return [
+    `/api/bot/market`
+    ] as const;
+    }
+
+
+export const getGetMarketSnapshotQueryOptions = <TData = Awaited<ReturnType<typeof getMarketSnapshot>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMarketSnapshot>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMarketSnapshotQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMarketSnapshot>>> = ({ signal }) => getMarketSnapshot({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMarketSnapshot>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMarketSnapshotQueryResult = NonNullable<Awaited<ReturnType<typeof getMarketSnapshot>>>
+export type GetMarketSnapshotQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the latest configured market snapshot
+ */
+
+export function useGetMarketSnapshot<TData = Awaited<ReturnType<typeof getMarketSnapshot>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMarketSnapshot>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMarketSnapshotQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSimulateBotRunUrl = () => {
+
+
+
+
+  return `/api/bot/simulate`
+}
+
+/**
+ * @summary Simulate the configured strategy over a long time horizon
+ */
+export const simulateBotRun = async (simulationInput: SimulationInput, options?: Parameters<typeof customFetch>[1]): Promise<SimulationResult> => {
+
+  return customFetch<SimulationResult>(getSimulateBotRunUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(simulationInput)
+  }
+);}
+
+
+
+
+
+export const getSimulateBotRunMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof simulateBotRun>>, TError,{data: BodyType<SimulationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof simulateBotRun>>, TError,{data: BodyType<SimulationInput>}, TContext> => {
+
+const mutationKey = ['simulateBotRun'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof simulateBotRun>>, {data: BodyType<SimulationInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  simulateBotRun(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SimulateBotRunMutationResult = NonNullable<Awaited<ReturnType<typeof simulateBotRun>>>
+    export type SimulateBotRunMutationBody = BodyType<SimulationInput>
+    export type SimulateBotRunMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Simulate the configured strategy over a long time horizon
+ */
+export const useSimulateBotRun = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof simulateBotRun>>, TError,{data: BodyType<SimulationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof simulateBotRun>>,
+        TError,
+        {data: BodyType<SimulationInput>},
+        TContext
+      > => {
+      return useMutation(getSimulateBotRunMutationOptions(options));
+    }
+
+export const getPrepareLiveBuyUrl = () => {
+
+
+
+
+  return `/api/bot/live-buy/prepare`
+}
+
+/**
+ * @summary Build a read-only preview of one capped live buy
+ */
+export const prepareLiveBuy = async ( options?: Parameters<typeof customFetch>[1]): Promise<LiveBuyPreview> => {
+
+  return customFetch<LiveBuyPreview>(getPrepareLiveBuyUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getPrepareLiveBuyMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof prepareLiveBuy>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof prepareLiveBuy>>, TError,void, TContext> => {
+
+const mutationKey = ['prepareLiveBuy'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof prepareLiveBuy>>, void> = () => {
+
+
+          return  prepareLiveBuy(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PrepareLiveBuyMutationResult = NonNullable<Awaited<ReturnType<typeof prepareLiveBuy>>>
+
+    export type PrepareLiveBuyMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Build a read-only preview of one capped live buy
+ */
+export const usePrepareLiveBuy = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof prepareLiveBuy>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof prepareLiveBuy>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getPrepareLiveBuyMutationOptions(options));
+    }
+
+export const getCreateWalletChallengeUrl = () => {
+
+
+
+
+  return `/api/app/auth/challenge`
+}
+
+/**
+ * @summary Create a single-use wallet ownership challenge
+ */
+export const createWalletChallenge = async (walletChallengeInput: WalletChallengeInput, options?: Parameters<typeof customFetch>[1]): Promise<WalletChallenge> => {
+
+  return customFetch<WalletChallenge>(getCreateWalletChallengeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(walletChallengeInput)
+  }
+);}
+
+
+
+
+
+export const getCreateWalletChallengeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWalletChallenge>>, TError,{data: BodyType<WalletChallengeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createWalletChallenge>>, TError,{data: BodyType<WalletChallengeInput>}, TContext> => {
+
+const mutationKey = ['createWalletChallenge'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createWalletChallenge>>, {data: BodyType<WalletChallengeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createWalletChallenge(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateWalletChallengeMutationResult = NonNullable<Awaited<ReturnType<typeof createWalletChallenge>>>
+    export type CreateWalletChallengeMutationBody = BodyType<WalletChallengeInput>
+    export type CreateWalletChallengeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a single-use wallet ownership challenge
+ */
+export const useCreateWalletChallenge = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createWalletChallenge>>, TError,{data: BodyType<WalletChallengeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createWalletChallenge>>,
+        TError,
+        {data: BodyType<WalletChallengeInput>},
+        TContext
+      > => {
+      return useMutation(getCreateWalletChallengeMutationOptions(options));
+    }
+
+export const getVerifyWalletChallengeUrl = () => {
+
+
+
+
+  return `/api/app/auth/verify`
+}
+
+/**
+ * @summary Verify wallet ownership and create a session
+ */
+export const verifyWalletChallenge = async (walletVerificationInput: WalletVerificationInput, options?: Parameters<typeof customFetch>[1]): Promise<UserBotDashboard> => {
+
+  return customFetch<UserBotDashboard>(getVerifyWalletChallengeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(walletVerificationInput)
+  }
+);}
+
+
+
+
+
+export const getVerifyWalletChallengeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyWalletChallenge>>, TError,{data: BodyType<WalletVerificationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyWalletChallenge>>, TError,{data: BodyType<WalletVerificationInput>}, TContext> => {
+
+const mutationKey = ['verifyWalletChallenge'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyWalletChallenge>>, {data: BodyType<WalletVerificationInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  verifyWalletChallenge(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyWalletChallengeMutationResult = NonNullable<Awaited<ReturnType<typeof verifyWalletChallenge>>>
+    export type VerifyWalletChallengeMutationBody = BodyType<WalletVerificationInput>
+    export type VerifyWalletChallengeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Verify wallet ownership and create a session
+ */
+export const useVerifyWalletChallenge = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyWalletChallenge>>, TError,{data: BodyType<WalletVerificationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof verifyWalletChallenge>>,
+        TError,
+        {data: BodyType<WalletVerificationInput>},
+        TContext
+      > => {
+      return useMutation(getVerifyWalletChallengeMutationOptions(options));
+    }
+
+export const getLogoutWalletUrl = () => {
+
+
+
+
+  return `/api/app/auth/logout`
+}
+
+/**
+ * @summary End the wallet session
+ */
+export const logoutWallet = async ( options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getLogoutWalletUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getLogoutWalletMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logoutWallet>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof logoutWallet>>, TError,void, TContext> => {
+
+const mutationKey = ['logoutWallet'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof logoutWallet>>, void> = () => {
+
+
+          return  logoutWallet(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LogoutWalletMutationResult = NonNullable<Awaited<ReturnType<typeof logoutWallet>>>
+
+    export type LogoutWalletMutationError = ErrorType<unknown>
+
+    /**
+ * @summary End the wallet session
+ */
+export const useLogoutWallet = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof logoutWallet>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof logoutWallet>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getLogoutWalletMutationOptions(options));
+    }
+
+export const getGetUserBotDashboardUrl = () => {
+
+
+
+
+  return `/api/app/dashboard`
+}
+
+/**
+ * @summary Get the authenticated user's bot dashboard
+ */
+export const getUserBotDashboard = async ( options?: Parameters<typeof customFetch>[1]): Promise<UserBotDashboard> => {
+
+  return customFetch<UserBotDashboard>(getGetUserBotDashboardUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetUserBotDashboardQueryKey = () => {
+    return [
+    `/api/app/dashboard`
+    ] as const;
+    }
+
+
+export const getGetUserBotDashboardQueryOptions = <TData = Awaited<ReturnType<typeof getUserBotDashboard>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUserBotDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetUserBotDashboardQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getUserBotDashboard>>> = ({ signal }) => getUserBotDashboard({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getUserBotDashboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetUserBotDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getUserBotDashboard>>>
+export type GetUserBotDashboardQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the authenticated user's bot dashboard
+ */
+
+export function useGetUserBotDashboard<TData = Awaited<ReturnType<typeof getUserBotDashboard>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getUserBotDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetUserBotDashboardQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSetupUserBotUrl = () => {
+
+
+
+
+  return `/api/app/bot/setup`
+}
+
+/**
+ * @summary Validate a KCC20 token and create an isolated bot wallet
+ */
+export const setupUserBot = async (botSetupInput: BotSetupInput, options?: Parameters<typeof customFetch>[1]): Promise<UserBotDashboard> => {
+
+  return customFetch<UserBotDashboard>(getSetupUserBotUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(botSetupInput)
+  }
+);}
+
+
+
+
+
+export const getSetupUserBotMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setupUserBot>>, TError,{data: BodyType<BotSetupInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setupUserBot>>, TError,{data: BodyType<BotSetupInput>}, TContext> => {
+
+const mutationKey = ['setupUserBot'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setupUserBot>>, {data: BodyType<BotSetupInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  setupUserBot(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetupUserBotMutationResult = NonNullable<Awaited<ReturnType<typeof setupUserBot>>>
+    export type SetupUserBotMutationBody = BodyType<BotSetupInput>
+    export type SetupUserBotMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Validate a KCC20 token and create an isolated bot wallet
+ */
+export const useSetupUserBot = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setupUserBot>>, TError,{data: BodyType<BotSetupInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setupUserBot>>,
+        TError,
+        {data: BodyType<BotSetupInput>},
+        TContext
+      > => {
+      return useMutation(getSetupUserBotMutationOptions(options));
+    }
+
+export const getVerifyBotActivationUrl = () => {
+
+
+
+
+  return `/api/app/bot/activation/verify`
+}
+
+/**
+ * @summary Verify the 100 KAS activation payment on-chain
+ */
+export const verifyBotActivation = async (activationVerificationInput: ActivationVerificationInput, options?: Parameters<typeof customFetch>[1]): Promise<UserBotDashboard> => {
+
+  return customFetch<UserBotDashboard>(getVerifyBotActivationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(activationVerificationInput)
+  }
+);}
+
+
+
+
+
+export const getVerifyBotActivationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyBotActivation>>, TError,{data: BodyType<ActivationVerificationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof verifyBotActivation>>, TError,{data: BodyType<ActivationVerificationInput>}, TContext> => {
+
+const mutationKey = ['verifyBotActivation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof verifyBotActivation>>, {data: BodyType<ActivationVerificationInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  verifyBotActivation(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VerifyBotActivationMutationResult = NonNullable<Awaited<ReturnType<typeof verifyBotActivation>>>
+    export type VerifyBotActivationMutationBody = BodyType<ActivationVerificationInput>
+    export type VerifyBotActivationMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Verify the 100 KAS activation payment on-chain
+ */
+export const useVerifyBotActivation = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof verifyBotActivation>>, TError,{data: BodyType<ActivationVerificationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof verifyBotActivation>>,
+        TError,
+        {data: BodyType<ActivationVerificationInput>},
+        TContext
+      > => {
+      return useMutation(getVerifyBotActivationMutationOptions(options));
+    }
+
+export const getChangeUserBotCovenantUrl = () => {
+
+
+
+
+  return `/api/app/bot/covenant/change`
+}
+
+/**
+ * @summary Change the covenant after all positions are sold and require a new activation
+ */
+export const changeUserBotCovenant = async (covenantChangeInput: CovenantChangeInput, options?: Parameters<typeof customFetch>[1]): Promise<UserBotDashboard> => {
+
+  return customFetch<UserBotDashboard>(getChangeUserBotCovenantUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(covenantChangeInput)
+  }
+);}
+
+
+
+
+
+export const getChangeUserBotCovenantMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeUserBotCovenant>>, TError,{data: BodyType<CovenantChangeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeUserBotCovenant>>, TError,{data: BodyType<CovenantChangeInput>}, TContext> => {
+
+const mutationKey = ['changeUserBotCovenant'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeUserBotCovenant>>, {data: BodyType<CovenantChangeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  changeUserBotCovenant(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeUserBotCovenantMutationResult = NonNullable<Awaited<ReturnType<typeof changeUserBotCovenant>>>
+    export type ChangeUserBotCovenantMutationBody = BodyType<CovenantChangeInput>
+    export type ChangeUserBotCovenantMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Change the covenant after all positions are sold and require a new activation
+ */
+export const useChangeUserBotCovenant = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeUserBotCovenant>>, TError,{data: BodyType<CovenantChangeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof changeUserBotCovenant>>,
+        TError,
+        {data: BodyType<CovenantChangeInput>},
+        TContext
+      > => {
+      return useMutation(getChangeUserBotCovenantMutationOptions(options));
+    }
+
+export const getStartUserBotUrl = () => {
+
+
+
+
+  return `/api/app/bot/start`
+}
+
+/**
+ * @summary Start the fixed-strategy user bot
+ */
+export const startUserBot = async ( options?: Parameters<typeof customFetch>[1]): Promise<UserBotDashboard> => {
+
+  return customFetch<UserBotDashboard>(getStartUserBotUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getStartUserBotMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startUserBot>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof startUserBot>>, TError,void, TContext> => {
+
+const mutationKey = ['startUserBot'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof startUserBot>>, void> = () => {
+
+
+          return  startUserBot(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StartUserBotMutationResult = NonNullable<Awaited<ReturnType<typeof startUserBot>>>
+
+    export type StartUserBotMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Start the fixed-strategy user bot
+ */
+export const useStartUserBot = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof startUserBot>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof startUserBot>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getStartUserBotMutationOptions(options));
+    }
+
+export const getStopUserBotUrl = () => {
+
+
+
+
+  return `/api/app/bot/stop`
+}
+
+/**
+ * @summary Stop the authenticated user's bot
+ */
+export const stopUserBot = async ( options?: Parameters<typeof customFetch>[1]): Promise<UserBotDashboard> => {
+
+  return customFetch<UserBotDashboard>(getStopUserBotUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getStopUserBotMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stopUserBot>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof stopUserBot>>, TError,void, TContext> => {
+
+const mutationKey = ['stopUserBot'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof stopUserBot>>, void> = () => {
+
+
+          return  stopUserBot(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type StopUserBotMutationResult = NonNullable<Awaited<ReturnType<typeof stopUserBot>>>
+
+    export type StopUserBotMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Stop the authenticated user's bot
+ */
+export const useStopUserBot = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof stopUserBot>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof stopUserBot>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getStopUserBotMutationOptions(options));
+    }
+
+export const getPrepareUserBotKasWithdrawalUrl = () => {
+
+
+
+
+  return `/api/app/bot/withdraw`
+}
+
+/**
+ * @summary Prepare a bot-wallet withdrawal for connected-wallet fee signing
+ */
+export const prepareUserBotKasWithdrawal = async (kasWithdrawalInput: KasWithdrawalInput, options?: Parameters<typeof customFetch>[1]): Promise<KasWithdrawalPreparation> => {
+
+  return customFetch<KasWithdrawalPreparation>(getPrepareUserBotKasWithdrawalUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(kasWithdrawalInput)
+  }
+);}
+
+
+
+
+
+export const getPrepareUserBotKasWithdrawalMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof prepareUserBotKasWithdrawal>>, TError,{data: BodyType<KasWithdrawalInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof prepareUserBotKasWithdrawal>>, TError,{data: BodyType<KasWithdrawalInput>}, TContext> => {
+
+const mutationKey = ['prepareUserBotKasWithdrawal'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof prepareUserBotKasWithdrawal>>, {data: BodyType<KasWithdrawalInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  prepareUserBotKasWithdrawal(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PrepareUserBotKasWithdrawalMutationResult = NonNullable<Awaited<ReturnType<typeof prepareUserBotKasWithdrawal>>>
+    export type PrepareUserBotKasWithdrawalMutationBody = BodyType<KasWithdrawalInput>
+    export type PrepareUserBotKasWithdrawalMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Prepare a bot-wallet withdrawal for connected-wallet fee signing
+ */
+export const usePrepareUserBotKasWithdrawal = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof prepareUserBotKasWithdrawal>>, TError,{data: BodyType<KasWithdrawalInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof prepareUserBotKasWithdrawal>>,
+        TError,
+        {data: BodyType<KasWithdrawalInput>},
+        TContext
+      > => {
+      return useMutation(getPrepareUserBotKasWithdrawalMutationOptions(options));
+    }
+
+export const getSubmitUserBotKasWithdrawalUrl = () => {
+
+
+
+
+  return `/api/app/bot/withdraw/submit`
+}
+
+/**
+ * @summary Validate and submit a connected-wallet-signed withdrawal
+ */
+export const submitUserBotKasWithdrawal = async (kasWithdrawalSubmission: KasWithdrawalSubmission, options?: Parameters<typeof customFetch>[1]): Promise<KasWithdrawalResult> => {
+
+  return customFetch<KasWithdrawalResult>(getSubmitUserBotKasWithdrawalUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(kasWithdrawalSubmission)
+  }
+);}
+
+
+
+
+
+export const getSubmitUserBotKasWithdrawalMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitUserBotKasWithdrawal>>, TError,{data: BodyType<KasWithdrawalSubmission>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitUserBotKasWithdrawal>>, TError,{data: BodyType<KasWithdrawalSubmission>}, TContext> => {
+
+const mutationKey = ['submitUserBotKasWithdrawal'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitUserBotKasWithdrawal>>, {data: BodyType<KasWithdrawalSubmission>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  submitUserBotKasWithdrawal(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitUserBotKasWithdrawalMutationResult = NonNullable<Awaited<ReturnType<typeof submitUserBotKasWithdrawal>>>
+    export type SubmitUserBotKasWithdrawalMutationBody = BodyType<KasWithdrawalSubmission>
+    export type SubmitUserBotKasWithdrawalMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Validate and submit a connected-wallet-signed withdrawal
+ */
+export const useSubmitUserBotKasWithdrawal = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitUserBotKasWithdrawal>>, TError,{data: BodyType<KasWithdrawalSubmission>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitUserBotKasWithdrawal>>,
+        TError,
+        {data: BodyType<KasWithdrawalSubmission>},
+        TContext
+      > => {
+      return useMutation(getSubmitUserBotKasWithdrawalMutationOptions(options));
+    }
 
