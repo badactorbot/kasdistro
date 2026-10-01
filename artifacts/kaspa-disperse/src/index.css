@@ -11,21 +11,6 @@
 
 @custom-variant dark (&:is(.dark *));
 
-.token-ticker-input,
-.token-ticker-input:focus {
-  background-color: #02050a !important;
-  color: white !important;
-  -webkit-text-fill-color: white !important;
-}
-
-.token-ticker-input:-webkit-autofill,
-.token-ticker-input:-webkit-autofill:hover,
-.token-ticker-input:-webkit-autofill:focus {
-  -webkit-text-fill-color: white !important;
-  box-shadow: 0 0 0 1000px #02050a inset !important;
-  transition: background-color 9999s ease-out;
-}
-
 @theme inline {
   --color-background: hsl(var(--background));
   --color-foreground: hsl(var(--foreground));
@@ -191,6 +176,32 @@
     @apply bg-[#030914]/40 backdrop-blur-md border border-white/5 shadow-lg;
   }
 
+  .cyber-grid {
+    background-image:
+      linear-gradient(rgba(72, 214, 201, 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(72, 214, 201, 0.07) 1px, transparent 1px);
+    background-size: 50px 50px;
+    background-position: center center;
+    position: relative;
+  }
+
+  .cyber-grid::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at top center, transparent 0%, #030914 80%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .glass-panel {
+    @apply bg-[#030914]/60 backdrop-blur-xl border border-primary/20 shadow-xl;
+  }
+
+  .glass-panel-subtle {
+    @apply bg-[#030914]/40 backdrop-blur-md border border-white/5 shadow-lg;
+  }
+
   .kd-app {
     background: #060a0e;
     background-image:
@@ -285,6 +296,31 @@
     opacity: 0.45;
     cursor: not-allowed;
     filter: grayscale(0.5);
+  }
+
+  .kd-cta-bot {
+    background: rgba(6, 182, 212, 0.12);
+    color: #a5f3fc;
+    border: 1px solid rgba(103, 232, 249, 0.45);
+    box-shadow: 0 0 18px rgba(34, 211, 238, 0.18), inset 0 1px 0 rgba(165, 243, 252, 0.12);
+  }
+
+  .kd-cta-bot:hover {
+    background: rgba(6, 182, 212, 0.22);
+    color: #ecfeff;
+    border-color: rgba(165, 243, 252, 0.7);
+    box-shadow: 0 0 26px rgba(34, 211, 238, 0.28);
+  }
+
+  .kd-cta-buy {
+    background: linear-gradient(135deg, #0891b2 0%, #22d3ee 100%);
+    color: #042f2e;
+    box-shadow: 0 0 22px rgba(34, 211, 238, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+
+  .kd-cta-buy:hover {
+    filter: brightness(1.08);
+    box-shadow: 0 0 30px rgba(34, 211, 238, 0.45);
   }
 
   .kd-pill {

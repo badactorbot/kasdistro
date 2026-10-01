@@ -7,9 +7,12 @@
     "dev": "export NODE_ENV=development && pnpm run build && node ./kill-port.cjs && pnpm run start",
     "build": "node ./build.mjs",
     "start": "node --enable-source-maps ./dist/index.mjs",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:pskt": "node --import tsx/esm src/test-kcc20-pskt.mts",
+    "test:fee": "node --import tsx/esm src/test-fee-selection.mts"
   },
   "dependencies": {
+    "@kronsdk/kron-sdk": "0.18.2",
     "@noble/hashes": "^2.3.0",
     "@workspace/api-zod": "workspace:*",
     "@workspace/db": "workspace:*",
@@ -21,7 +24,6 @@
     "pino-http": "^10.5.0"
   },
   "devDependencies": {
-    "@kronsdk/kron-sdk": "0.18.2",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",

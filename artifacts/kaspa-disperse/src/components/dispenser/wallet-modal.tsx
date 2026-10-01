@@ -21,7 +21,7 @@ export function WalletModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/85 backdrop-blur-md p-4">
       <div className="relative w-full max-w-md kd-glass rounded-2xl p-6 shadow-2xl shadow-cyan-500/10">
         <div className="flex items-center justify-between pb-4 border-b border-cyan-900/30">
           <div className="flex items-center gap-2">
@@ -45,19 +45,22 @@ export function WalletModal({
 
         <div className="mt-4 space-y-2">
           {KASPA_WALLETS.map((wallet) => {
-            const isInstalled = wallet.type !== 'extension' || installedMap[wallet.id];
-            const isLoading = walletLoading === wallet.id;
-            return (
-              <div
-                key={wallet.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => isInstalled && !isLoading && onConnect(wallet)}
-                onKeyDown={(e) => e.key === 'Enter' && isInstalled && !isLoading && onConnect(wallet)}
+                const isInstalled = wallet.type !== 'extension' || installedMap[wallet.id];
+                const isLoading = walletLoading === wallet.id;
+                const canConnect = wallet.type === 'extension' || isInstalled;
+                return (
+                  <div
+                    key={wallet.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => canConnect && !isLoading && onConnect(wallet)}
+                    onKeyDown={(e) => e.key === 'Enter' && canConnect && !isLoading && onConnect(wallet)}
                 className={`flex items-center justify-between p-3.5 rounded-xl border transition cursor-pointer ${
-                  isInstalled
+                  wallet.type === 'extension'
                     ? 'border-cyan-900/30 bg-white/5 hover:bg-white/8 hover:border-cyan-500/30'
-                    : 'border-zinc-800/50 opacity-60'
+                    : isInstalled
+                      ? 'border-cyan-900/30 bg-white/5 hover:bg-white/8 hover:border-cyan-500/30'
+                      : 'border-zinc-800/50 opacity-60'
                 }`}
               >
                 <div className="flex items-center gap-3">
