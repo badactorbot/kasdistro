@@ -47,7 +47,7 @@ export function TokenDistributionChart() {
           ))}
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-[10px] uppercase tracking-wider text-zinc-500">Allocation</span>
+          <span className="text-[10px] uppercase tracking-wider text-cyan-200">Allocation</span>
           <span className="text-lg font-bold text-white">100%</span>
         </div>
       </div>
@@ -63,7 +63,7 @@ export function TokenDistributionChart() {
                 <span className="font-medium text-white">{item.label}</span>
                 <span className="text-sm font-semibold text-cyan-300 tabular-nums">{item.pct}%</span>
               </div>
-              <p className="text-sm text-zinc-500 leading-relaxed mt-0.5">{item.description}</p>
+              <p className="text-sm text-cyan-200 leading-relaxed mt-0.5">{item.description}</p>
             </div>
           </li>
         ))}

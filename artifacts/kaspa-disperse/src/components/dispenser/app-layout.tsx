@@ -1,10 +1,8 @@
 import {
   CheckCircle2,
-  Coins,
   Globe,
   LayoutDashboard,
   Lock,
-  PieChart,
   Send,
   Shield,
   Upload,
@@ -21,7 +19,6 @@ import { DispenserBrand } from './brand-logo';
 const NAV = [
   { id: 'dispenser', label: 'Dispenser', href: '/', icon: LayoutDashboard },
   { id: 'how', label: 'How It Works', href: '/#how-it-works', icon: Zap },
-  { id: 'fees', label: 'Fees', href: '/#fees', icon: PieChart },
 ] as const;
 
 interface AppLayoutProps {

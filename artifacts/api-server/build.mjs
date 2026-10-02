@@ -28,9 +28,10 @@ async function buildAll() {
     // - uses native modules and loads them dynamically (e.g. sharp)
     // - use path traversal to read files (e.g. @google-cloud/secret-manager loads sibling .proto files)
     external: [
+      "@kronsdk/kron-sdk",
+      "@kronsdk/kron-sdk/*",
       "*.node",
       "kaspa-wasm",   // Node.js-only CJS WASM module; must stay external so __dirname resolves correctly
-      "@kronsdk/kron-sdk/wasm", // Loader locates its sibling vendor/kaspa/kaspa_bg.wasm via import.meta.url
       "sharp",
       "better-sqlite3",
       "sqlite3",
