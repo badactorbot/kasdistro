@@ -19,6 +19,21 @@ export type LiveBotCredentials = {
   tokenId: string;
 };
 
+export class TradeSubmissionAttemptedError extends Error {
+  constructor(message: string, cause: unknown) {
+    super(message);
+    this.name = "TradeSubmissionAttemptedError";
+    (this as Error & { cause?: unknown }).cause = cause;
+  }
+}
+
+export class RetryableTradeStateError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RetryableTradeStateError";
+  }
+}
+
 const toBytes = (hex: string) => Uint8Array.from(Buffer.from(hex, "hex"));
 const toKas = (sompi: bigint) => Number(sompi) / Number(SOMPI_PER_KAS);
 

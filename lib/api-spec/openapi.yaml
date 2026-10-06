@@ -326,6 +326,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UserBotDashboard"
+  /app/bot/sell-all:
+    post:
+      operationId: sellAllUserBotManagedPositions
+      tags: [bot]
+      summary: Sell all remaining managed token lots held by the bot wallet
+      description: >
+        Stops leftover inventory from blocking KAS withdrawal. Requires trading
+        to be stopped and no in-flight operation. Sells open managed lots FIFO
+        using the bot wallet key.
+      responses:
+        "200":
+          description: Sell-all result with sold lot count and transaction IDs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SellAllManagedPositionsResult"
   /app/bot/withdraw:
     post:
       operationId: prepareUserBotKasWithdrawal
@@ -792,6 +808,26 @@ components:
           type: string
         remainingBalanceKas:
           type: string
+    SellAllManagedPositionsResult:
+      type: object
+      required: [soldCount, remainingOpenLots, sellTransactionIds, complete]
+      properties:
+        soldCount:
+          type: integer
+          minimum: 0
+        remainingOpenLots:
+          type: integer
+          minimum: 0
+        sellTransactionIds:
+          type: array
+          items:
+            type: string
+        complete:
+          type: boolean
+          description: True when every open managed lot was sold successfully.
+        message:
+          type: string
+          description: Human-readable status or partial-failure detail.
     KasWithdrawalSubmission:
       type: object
       required: [signedTransaction]

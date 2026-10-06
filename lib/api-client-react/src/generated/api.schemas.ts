@@ -327,6 +327,18 @@ export interface KasWithdrawalResult {
   remainingBalanceKas: string;
 }
 
+export interface SellAllManagedPositionsResult {
+  /** @minimum 0 */
+  soldCount: number;
+  /** @minimum 0 */
+  remainingOpenLots: number;
+  sellTransactionIds: string[];
+  /** True when every open managed lot was sold successfully. */
+  complete: boolean;
+  /** Human-readable status or partial-failure detail. */
+  message?: string;
+}
+
 export interface ActivationVerificationInput {
   /** @pattern ^[a-fA-F0-9]{64}$ */
   transactionId: string;

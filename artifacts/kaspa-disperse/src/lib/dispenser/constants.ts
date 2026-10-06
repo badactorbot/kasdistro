@@ -1,5 +1,4 @@
-export const VOLUME_BOT_URL =
-  'https://kcc-20-kron-trading-bot.replit.app/volume-bot';
+export const VOLUME_BOT_URL = '/volume-bot';
 
 export const SERVICE_FEE_KAS = 100;
 export const SERVICE_FEE_ADDRESS =

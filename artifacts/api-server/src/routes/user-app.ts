@@ -15,6 +15,7 @@ import {
   ChangeUserBotCovenantResponse,
   PrepareUserBotKasWithdrawalBody,
   PrepareUserBotKasWithdrawalResponse,
+  SellAllUserBotManagedPositionsResponse,
   SubmitUserBotKasWithdrawalBody,
   SubmitUserBotKasWithdrawalResponse,
 } from "@workspace/api-zod";
@@ -34,6 +35,7 @@ import {
   prepareUserBotKasWithdrawal,
   submitUserBotKasWithdrawal,
 } from "../lib/bot-withdrawal-service";
+import { sellAllUserBotManagedPositions } from "../lib/bot-sell-all-service";
 
 const router: IRouter = Router();
 const cookie = (req: any) => req.cookies?.[sessionCookieName()] as string | undefined;
@@ -61,8 +63,10 @@ router.post("/app/auth/verify", handler(async (req, res) => {
   const result = await verifyWalletChallenge(input);
   res.cookie(sessionCookieName(), result.token, {
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    sameSite: process.env.COOKIE_SAME_SITE === "none" ? "none" : "lax",
+    secure:
+      process.env.COOKIE_SAME_SITE === "none" ||
+      process.env.NODE_ENV === "production",
     maxAge: 7 * 24 * 60 * 60_000,
   });
   res.json(VerifyWalletChallengeResponse.parse(await getUserDashboard(result.userId)));
@@ -101,6 +105,12 @@ router.post("/app/bot/start", handler(async (req, res) => {
 
 router.post("/app/bot/stop", handler(async (req, res) => {
   res.json(StopUserBotResponse.parse(await setUserBotRunning(userId(req), false)));
+}));
+
+router.post("/app/bot/sell-all", handler(async (req, res) => {
+  res.json(SellAllUserBotManagedPositionsResponse.parse(
+    await sellAllUserBotManagedPositions(userId(req)),
+  ));
 }));
 
 router.post("/app/bot/withdraw", handler(async (req, res) => {

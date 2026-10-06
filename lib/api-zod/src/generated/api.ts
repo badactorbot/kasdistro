@@ -859,6 +859,23 @@ export const StopUserBotResponse = zod.object({
 
 
 /**
+ * Stops leftover inventory from blocking KAS withdrawal. Requires trading to be stopped and no in-flight operation. Sells open managed lots FIFO using the bot wallet key.
+ * @summary Sell all remaining managed token lots held by the bot wallet
+ */
+export const sellAllUserBotManagedPositionsResponseSoldCountMin = 0;
+
+export const sellAllUserBotManagedPositionsResponseRemainingOpenLotsMin = 0;
+
+export const SellAllUserBotManagedPositionsResponse = zod.object({
+  "soldCount": zod.number().int().min(sellAllUserBotManagedPositionsResponseSoldCountMin),
+  "remainingOpenLots": zod.number().int().min(sellAllUserBotManagedPositionsResponseRemainingOpenLotsMin),
+  "sellTransactionIds": zod.array(zod.string()),
+  "complete": zod.boolean().describe('True when every open managed lot was sold successfully.'),
+  "message": zod.string().optional().describe('Human-readable status or partial-failure detail.')
+})
+
+
+/**
  * @summary Prepare a bot-wallet withdrawal for connected-wallet fee signing
  */
 export const prepareUserBotKasWithdrawalBodyAmountKasRegExp = new RegExp('^(?:0|[1-9][0-9]*)(?:\\.[0-9]{1,8})?$');

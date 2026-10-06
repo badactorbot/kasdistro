@@ -37,6 +37,7 @@ import type {
   KasWithdrawalSubmission,
   LiveBuyPreview,
   MarketSnapshot,
+  SellAllManagedPositionsResult,
   SimulationInput,
   SimulationResult,
   TestnetTokenInspection,
@@ -1542,6 +1543,43 @@ export const useStopUserBot = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getStopUserBotMutationOptions(options));
+    }
+
+export const getSellAllUserBotManagedPositionsUrl = () => {
+  return `/api/app/bot/sell-all`
+}
+
+export const sellAllUserBotManagedPositions = async ( options?: Parameters<typeof customFetch>[1]): Promise<SellAllManagedPositionsResult> => {
+  return customFetch<SellAllManagedPositionsResult>(getSellAllUserBotManagedPositionsUrl(),
+  {
+    ...options,
+    method: 'POST'
+  }
+);}
+
+export const getSellAllUserBotManagedPositionsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sellAllUserBotManagedPositions>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sellAllUserBotManagedPositions>>, TError,void, TContext> => {
+const mutationKey = ['sellAllUserBotManagedPositions'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sellAllUserBotManagedPositions>>, void> = () => {
+          return  sellAllUserBotManagedPositions(requestOptions)
+        }
+  return  { mutationFn, ...mutationOptions }}
+
+export const useSellAllUserBotManagedPositions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sellAllUserBotManagedPositions>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sellAllUserBotManagedPositions>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getSellAllUserBotManagedPositionsMutationOptions(options));
     }
 
 export const getPrepareUserBotKasWithdrawalUrl = () => {
