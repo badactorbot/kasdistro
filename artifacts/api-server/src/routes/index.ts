@@ -11,9 +11,7 @@ router.use('/kaspa', kaspaRouter);
 router.use('/kron', kronRouter);
 router.use(botRouter);
 
-if (process.env.DATABASE_URL) {
-  const { default: userAppRouter } = await import("./user-app");
-  router.use(userAppRouter);
-}
+const { default: userAppRouter } = await import("./user-app");
+router.use(userAppRouter);
 
 export default router;
