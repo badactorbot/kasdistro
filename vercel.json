@@ -3,7 +3,20 @@
   "installCommand": "pnpm install",
   "buildCommand": "node ./scripts/vercel-build.mjs",
   "outputDirectory": "artifacts/kaspa-disperse/dist/public",
+  "functions": {
+    "api/index.js": {
+      "maxDuration": 60,
+      "includeFiles": "artifacts/api-server/deploy/**"
+    },
+    "api/kron/token-holders/[identifier].ts": {
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api"
+    },
     {
       "source": "/((?!api/).*)",
       "destination": "/index.html"
@@ -18,13 +31,5 @@
         { "key": "Access-Control-Allow-Headers", "value": "Accept, Content-Type, Cache-Control" }
       ]
     }
-  ],
-  "functions": {
-    "api/[...path].ts": {
-      "maxDuration": 60
-    },
-    "api/kron/token-holders/[identifier].ts": {
-      "maxDuration": 60
-    }
-  }
+  ]
 }

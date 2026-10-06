@@ -3,19 +3,59 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { build as esbuild } from "esbuild";
 import esbuildPluginPino from "esbuild-plugin-pino";
-import { rm } from "node:fs/promises";
+import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises";
 
 // Plugins (e.g. 'esbuild-plugin-pino') may use `require` to resolve dependencies
 globalThis.require = createRequire(import.meta.url);
 
 const artifactDir = path.dirname(fileURLToPath(import.meta.url));
 
+async function patchPinoWorkerPaths(appPath) {
+  const source = await readFile(appPath, "utf8");
+  const patched = source.replace(
+    /const outputDir = "[^"]*";/,
+    "const outputDir = globalThis.__dirname;",
+  );
+  if (patched === source) {
+    throw new Error(
+      "deploy staging failed: esbuild-plugin-pino outputDir string not found in app.mjs",
+    );
+  }
+  await writeFile(appPath, patched);
+}
+
+async function stageDeployBundle(distDir) {
+  const deployDir = path.resolve(artifactDir, "deploy");
+  await rm(deployDir, { recursive: true, force: true });
+  await mkdir(deployDir, { recursive: true });
+
+  const staged = [];
+  for (const file of await readdir(distDir)) {
+    const isApp = file === "app.mjs";
+    const isWorker =
+      file.startsWith("pino-") || file.startsWith("thread-stream-");
+    if ((!isApp && !isWorker) || file.endsWith(".map")) continue;
+    await cp(path.join(distDir, file), path.join(deployDir, file));
+    staged.push(file);
+  }
+
+  if (!staged.includes("app.mjs")) {
+    throw new Error("deploy staging failed: dist/app.mjs missing");
+  }
+
+  await patchPinoWorkerPaths(path.join(deployDir, "app.mjs"));
+  console.log(`Staged deploy bundle: ${staged.join(", ")}`);
+}
+
 async function buildAll() {
   const distDir = path.resolve(artifactDir, "dist");
   await rm(distDir, { recursive: true, force: true });
 
   await esbuild({
-    entryPoints: [path.resolve(artifactDir, "src/index.ts")],
+    entryPoints: {
+      index: path.resolve(artifactDir, "src/index.ts"),
+      app: path.resolve(artifactDir, "src/app.ts"),
+    },
     platform: "node",
     bundle: true,
     format: "esm",
@@ -121,6 +161,8 @@ globalThis.__dirname = __bannerPath.dirname(globalThis.__filename);
     `,
     },
   });
+
+  await stageDeployBundle(distDir);
 }
 
 buildAll().catch((err) => {
