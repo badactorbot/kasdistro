@@ -40,8 +40,6 @@ function NavAnchor({
 const LINKS = [
   { label: 'How It Works', href: '/#how-it-works' },
   { label: 'Features', href: '/#features' },
-  { label: 'Token Distribution', href: '/#token-distribution' },
-  { label: 'Holder Rewards', href: '/#holder-rewards' },
   { label: 'Kaspaper', href: '/kaspaper' },
 ];
 
@@ -124,15 +122,15 @@ export function LandingLayout({
               <SocialLinks size="lg" />
               <NavAnchor
                 href="/volume-bot"
-                className="kd-cta-bot inline-flex items-center justify-center whitespace-nowrap rounded-xl px-4 py-3 text-sm font-bold tracking-wide"
+                className="kd-btn inline-flex items-center justify-center whitespace-nowrap text-black font-bold text-sm px-5 py-3 rounded-xl tracking-wide"
               >
                 Volume Bot
               </NavAnchor>
               <NavAnchor
                 href="/distro"
-                className="kd-btn inline-flex items-center justify-center whitespace-nowrap text-black font-bold text-sm px-5 py-3 rounded-xl uppercase tracking-wide"
+                className="kd-btn inline-flex items-center justify-center whitespace-nowrap text-black font-bold text-sm px-5 py-3 rounded-xl tracking-wide"
               >
-                Open Kasdistro
+                Distro Bot
               </NavAnchor>
             </div>
           </div>
@@ -149,8 +147,6 @@ export function LandingLayout({
               ) : null}
               <NavAnchor href="/#how-it-works" className="hover:text-cyan-100">How It Works</NavAnchor>
               <NavAnchor href="/distro" className="hover:text-cyan-100">Open Kasdistro</NavAnchor>
-              <NavAnchor href="/#token-distribution" className="hover:text-cyan-100">Token Distribution</NavAnchor>
-              <NavAnchor href="/#holder-rewards" className="hover:text-cyan-100">Holder Rewards</NavAnchor>
               <NavAnchor href="/kaspaper" className="hover:text-cyan-100">Kaspaper</NavAnchor>
               <NavAnchor href="/volume-bot" className="hover:text-cyan-100">Volume Bot</NavAnchor>
                <NavAnchor href="/testnet-lab" className="hover:text-cyan-100">Testnet Lab</NavAnchor>

@@ -167,77 +167,7 @@ const VOLUME_ROADMAP = [
   },
 ];
 
-const KCC20_PROBLEMS = [
-  {
-    title: 'Discovery',
-    body: 'A token ID must resolve to the intended holder set. An incomplete indexer page, stale snapshot, burn address, or covenant-owned inventory must not quietly become an ordinary recipient list.',
-  },
-  {
-    title: 'Allocation',
-    body: 'Indivisible whole token units cannot always be split evenly. Floating-point arithmetic or discarded remainders can change the intended total.',
-  },
-  {
-    title: 'Execution',
-    body: 'Token transfers require valid covenant-state transitions and KAS funding. The 90-recipient native-KAS batch examples in the KasDistro paper do not establish a safe batch size or fee for a KCC-20 transfer.',
-  },
-];
-
-const KCC20_WORKFLOW = [
-  'Enter a 64-character KCC-20 token ID.',
-  'Import the eligible holder addresses; while indexing is in progress, display progress rather than inserting a partial list.',
-  'Review the discovered ticker, or enter one if metadata is unavailable. A manually typed ticker is a display label, not proof of token identity.',
-  'Enter a positive whole-number total token amount.',
-  'Inspect the read-only recipient count, total, base allocation, and address-by-address allocation table.',
-];
-
-const KCC20_ALLOCATION_ROWS = [
-  ['1,003', '4', '250', 'first 3', '251 / 251 / 251 / 250'],
-  ['100', '10', '10', 'none', '10 each'],
-  ['5', '8', '—', '—', 'rejected: too few units'],
-];
-
-const KCC20_COST_ROWS = [
-  ['Token allocation', 'Total whole units and per-address amounts'],
-  ['KAS output funding', 'KAS needed by covenant carrier outputs and change'],
-  ['Network fee', "Estimate for the actual transaction's mass/inputs"],
-  ['Service charge, if any', 'Amount, destination, and whether it is per batch'],
-  ['Execution plan', 'Number of batches, approvals, and failure recovery'],
-];
-
-const KCC20_ROADMAP = [
-  {
-    phase: '01',
-    title: 'Holder Intelligence',
-    status: 'Available in the current preview',
-    body: 'Import eligible addresses by KCC-20 token ID, reject explicit invalid validation states, and show indexing progress instead of partial results.',
-  },
-  {
-    phase: '02',
-    title: 'Deterministic Allocation',
-    status: 'Available in the current preview',
-    body: 'Divide a whole-number total evenly, preserve the remainder, and display every address and amount for inspection.',
-  },
-  {
-    phase: '03',
-    title: 'Transfer Preflight',
-    status: 'Proposed',
-    body: "Bind the selected token ID and ticker, inspect the sender's token and KAS UTXOs, calculate covenant-compatible outputs, estimate the true KAS cost, and reject unsupported token layouts before requesting a signature.",
-  },
-  {
-    phase: '04',
-    title: 'Wallet-Signed Execution',
-    status: 'Proposed',
-    body: 'Sign through a compatible Kaspa wallet, submit only reviewed transfers, use mass- and covenant-safe batch sizing, and prevent reused inputs across sequential batches. Record successes so an interrupted run cannot silently resend completed allocations.',
-  },
-  {
-    phase: '05',
-    title: 'Campaign Evidence',
-    status: 'Proposed',
-    body: 'Pin holder snapshot metadata and ordering, export allocation and transaction receipts, and support independent review of completed runs.',
-  },
-];
-
-type PaperTone = 'cyan' | 'blue' | 'white';
+type PaperTone = 'cyan' | 'blue';
 
 function Section({
   num,
@@ -254,9 +184,6 @@ function Section({
   switch (tone) {
     case 'blue':
       numClass = 'text-sky-300';
-      break;
-    case 'white':
-      numClass = 'text-white';
       break;
     case 'cyan':
       numClass = 'text-cyan-400';
@@ -296,12 +223,6 @@ function PaperTable({
       head = 'border-b border-sky-400/30 bg-sky-500/10';
       headText = 'text-sky-200';
       rowBorder = 'border-b border-sky-400/15 last:border-0';
-      break;
-    case 'white':
-      shell = 'border-white/20';
-      head = 'border-b border-white/15 bg-white/5';
-      headText = 'text-zinc-200';
-      rowBorder = 'border-b border-white/10 last:border-0';
       break;
     case 'cyan':
       shell = 'border-cyan-900/30';
@@ -358,12 +279,6 @@ export default function Kaspaper() {
           className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-cyan-200 hover:bg-cyan-500/20"
         >
           Distro Paper
-        </a>
-        <a
-          href="#kcc20distro"
-          className="rounded-full border border-white/25 bg-white/5 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-100 hover:bg-white/10"
-        >
-          KCC20 Paper
         </a>
         <a
           href="#kasvolume"
@@ -529,230 +444,6 @@ export default function Kaspaper() {
             <p className="text-sm text-zinc-500">
               This document is a technical white paper and product proposal, not financial
               or legal advice. Revenue illustrations are hypothetical.
-            </p>
-          </Section>
-        </div>
-      </article>
-
-      <article
-        id="kcc20distro"
-        className="relative scroll-mt-40 border-t border-white/15"
-      >
-        <header className="px-4 sm:px-6 pt-16 sm:pt-24 pb-14 text-center">
-          <p className="mb-5 text-xs font-semibold uppercase tracking-[0.32em] text-zinc-300/90">
-            KCC20 Distro · White Paper v1.0
-          </p>
-          <h1 className="mx-auto max-w-3xl text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight leading-[1.1] text-white">
-            Equal Allocation for{' '}
-            <span className="bg-gradient-to-r from-zinc-100 via-white to-zinc-400 bg-clip-text text-transparent">
-              KCC-20
-            </span>{' '}
-            Holders
-          </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-zinc-400">
-            Companion planning tool for covenant-token distribution. Read-only
-            preview today — wallet-signed execution ahead. September 2026.
-          </p>
-        </header>
-
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 py-12 sm:py-16 space-y-20">
-          <Section tone="white" num="01" title="Executive Summary">
-            <p>
-              KCC20 Distro is a companion to KasDistro&apos;s native-KAS distribution tool.
-              Instead of sending KAS to a recipient list, it prepares an equal allocation of
-              KCC-20 tokens across the eligible holders of a selected KCC-20 token. A user
-              enters its 64-character hexadecimal token ID and a positive, whole-number total.
-              The app imports a holder list, displays the number of recipients, and previews
-              exactly how many whole token units each address would receive.
-            </p>
-            <p>
-              The distinction matters: a KCC-20 token is held in covenant-controlled UTXOs,
-              not in an ordinary native-KAS balance. A preview is not a token transfer. Future
-              execution must account for covenant rules, token-bearing inputs and outputs, the
-              KAS needed to carry those outputs, network fees, and wallet authorization.
-            </p>
-          </Section>
-
-          <Section tone="white" num="02" title="The Problem">
-            <p>
-              Token communities need a reliable way to distribute rewards, grants, or community
-              allocations without losing recipients or miscalculating amounts. KCC-20
-              distribution has three separate challenges:
-            </p>
-            <ul className="space-y-3">
-              {KCC20_PROBLEMS.map((item) => (
-                <li
-                  key={item.title}
-                  className="rounded-2xl border border-white/10 bg-white/[0.03] p-5"
-                >
-                  <p className="font-semibold text-white">{item.title}</p>
-                  <p className="mt-2 text-sm leading-relaxed">{item.body}</p>
-                </li>
-              ))}
-            </ul>
-            <div className="rounded-2xl border border-white/20 bg-white/[0.04] p-6">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-zinc-200">
-                The Completeness Principle
-              </p>
-              <p className="mt-3 text-white leading-relaxed">
-                The app accepts a holder import for preview only after the service returns a
-                finished list that matches its declared count, contains unique Kaspa addresses,
-                and identifies the requested token. It rejects explicit invalid indexer
-                validation states. This is an application-level check, not an independent
-                cryptographic proof that an upstream indexer is current or exhaustive. A final
-                on-chain product must define snapshot timing and verify its data source.
-              </p>
-            </div>
-          </Section>
-
-          <Section tone="white" num="03" title="Product Overview">
-            <p>The current KCC20 Distro workflow is:</p>
-            <ol className="space-y-3">
-              {KCC20_WORKFLOW.map((step, index) => (
-                <li
-                  key={step}
-                  className="flex gap-4 rounded-xl border border-white/10 bg-white/[0.03] p-4"
-                >
-                  <span className="font-mono text-sm font-bold text-white">
-                    {String(index + 1).padStart(2, '0')}
-                  </span>
-                  <span className="text-zinc-300">{step}</span>
-                </li>
-              ))}
-            </ol>
-            <p>
-              The present tool does not let the user connect a wallet from this screen or press
-              a &quot;send&quot; button. No preview row represents a completed payment.
-            </p>
-          </Section>
-
-          <Section tone="white" num="04" title="Architectural Principles">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
-              <h3 className="font-semibold text-white">Holder Eligibility</h3>
-              <p className="mt-2 text-sm leading-relaxed">
-                The holder service uses the 64-character token ID, paginates the supported
-                KCC-20 indexer, and deduplicates eligible <span className="font-mono text-zinc-200">kaspa:</span>{' '}
-                addresses. The canonical burn address and{' '}
-                <span className="font-mono text-zinc-200">covenant:</span> inventory are excluded
-                from ordinary recipient imports. For supported KRON tokens, a separate indexer
-                path checks its returned holder count before producing the list. These checks
-                reduce, but do not eliminate, dependence on the accuracy and freshness of
-                external holder data.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-6 space-y-4">
-              <h3 className="font-semibold text-white">Whole-Unit Conservation</h3>
-              <p className="text-sm leading-relaxed">
-                For <span className="text-zinc-200">N</span> eligible addresses and a
-                whole-number total <span className="text-zinc-200">T</span>, the preview computes:
-              </p>
-              <div className="grid gap-2 font-mono text-sm text-zinc-200 sm:grid-cols-2">
-                <p className="rounded-xl border border-white/10 bg-black/30 px-4 py-3">
-                  Base amount = floor(T / N)
-                </p>
-                <p className="rounded-xl border border-white/10 bg-black/30 px-4 py-3">
-                  Remainder = T mod N
-                </p>
-              </div>
-              <p className="text-sm leading-relaxed">
-                Each address receives the base amount; the first &quot;remainder&quot; addresses
-                in the returned list receive one additional unit. The sum of previewed
-                allocations therefore equals T exactly. If T is less than N, the tool refuses to
-                show a distribution in which any holder would receive zero.
-              </p>
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-zinc-300">
-                Illustrative preview
-              </p>
-              <PaperTable
-                tone="white"
-                headers={[
-                  'Total Units',
-                  'Holders',
-                  'Base Each',
-                  'Extra Unit',
-                  'Displayed Allocations',
-                ]}
-                rows={KCC20_ALLOCATION_ROWS}
-              />
-              <p className="text-sm leading-relaxed">
-                The order of remainder recipients follows the returned address list. A future
-                auditable campaign should pin both that ordering and the holder snapshot before
-                signing so the allocation cannot shift between review and execution.
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-white/20 bg-gradient-to-r from-white/10 to-white/[0.03] p-6">
-              <h3 className="font-semibold text-white">
-                Non-Custodial Authorization — Future Execution Requirement
-              </h3>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-300">
-                The KCC20 preview does not ask for private keys. Any future transfer flow should
-                leave keys in the user&apos;s wallet, show an exact transaction review, and
-                require explicit approval before every transaction is submitted.
-              </p>
-            </div>
-          </Section>
-
-          <Section tone="white" num="05" title="Revenue & Transaction Economics">
-            <p>
-              No KCC-20 distribution fee is implemented in the current read-only preview. There
-              are no signed transactions, network fees, or token transfers generated by using
-              that screen. The native-KAS KasDistro paper&apos;s 100 KAS-per-batch illustration
-              is not a KCC-20 fee schedule.
-            </p>
-            <p>
-              For a future on-chain release, a pre-signing quote should separately disclose:
-            </p>
-            <PaperTable
-              tone="white"
-              headers={['Cost Component', 'What Must Be Shown']}
-              rows={KCC20_COST_ROWS}
-            />
-            <p>
-              Any subscription, enterprise licensing, or protocol revenue model is a commercial
-              proposal only. No revenue figures are projected from today&apos;s preview, and no
-              fee should be represented as payable until the app actually quotes and implements
-              it.
-            </p>
-          </Section>
-
-          <Section tone="white" num="06" title="Strategic Roadmap">
-            <div className="grid gap-3">
-              {KCC20_ROADMAP.map((item) => (
-                <div
-                  key={item.phase}
-                  className="grid grid-cols-[3.5rem_1fr] overflow-hidden rounded-2xl border border-white/15 bg-white/[0.03]"
-                >
-                  <div className="flex items-center justify-center bg-white/10 font-mono text-sm font-bold text-white">
-                    {item.phase}
-                  </div>
-                  <div className="p-4">
-                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                      <h3 className="font-semibold text-white">{item.title}</h3>
-                      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
-                        {item.status}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-sm leading-relaxed">{item.body}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </Section>
-
-          <Section tone="white" num="07" title="Conclusion">
-            <p>
-              KCC20 Distro currently solves the planning half of covenant-token distribution: it
-              turns an eligible holder list and a whole-number token budget into a reviewable,
-              sum-preserving allocation. Completing the transaction half requires covenant-aware
-              construction, transparent KAS cost estimates, wallet signing, and verifiable batch
-              tracking. The read-only boundary is intentional: a correct preview should not be
-              mistaken for an on-chain distribution.
-            </p>
-            <p className="text-sm text-zinc-500">
-              This document is a technical product paper, not financial or legal advice. Planned
-              capabilities and commercial models are proposals, not guarantees.
             </p>
           </Section>
         </div>

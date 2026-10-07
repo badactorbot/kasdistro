@@ -18,8 +18,32 @@
   },
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api"
+      "source": "/api/app/:path*",
+      "destination": "https://kasvolume.vercel.app/api/app/:path*"
+    },
+    {
+      "source": "/api/bot/:path*",
+      "destination": "https://kasvolume.vercel.app/api/bot/:path*"
+    },
+    {
+      "source": "/api/healthz",
+      "destination": "https://kasvolume.vercel.app/api/healthz"
+    },
+    {
+      "source": "/api/kaspa/:path*",
+      "destination": "/api/kaspa/build-pskt"
+    },
+    {
+      "source": "/volume-bot",
+      "destination": "https://kasvolume.vercel.app/volume-bot"
+    },
+    {
+      "source": "/volume-bot/",
+      "destination": "https://kasvolume.vercel.app/volume-bot/"
+    },
+    {
+      "source": "/volume-bot/:path*",
+      "destination": "https://kasvolume.vercel.app/volume-bot/:path*"
     },
     {
       "source": "/((?!api/).*)",
@@ -28,10 +52,18 @@
   ],
   "headers": [
     {
-      "source": "/api/(.*)",
+      "source": "/api/kron/(.*)",
       "headers": [
         { "key": "Access-Control-Allow-Origin", "value": "*" },
-        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, PATCH, OPTIONS" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, OPTIONS" },
+        { "key": "Access-Control-Allow-Headers", "value": "Accept, Content-Type" }
+      ]
+    },
+    {
+      "source": "/api/kaspa/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
         { "key": "Access-Control-Allow-Headers", "value": "Accept, Content-Type, Cache-Control" }
       ]
     }

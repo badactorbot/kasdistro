@@ -2,7 +2,6 @@ import {
   ArrowRight,
   Building2,
   Coins,
-  Gift,
   Rocket,
   Shield,
   Sparkles,
@@ -12,7 +11,6 @@ import {
 } from 'lucide-react';
 import { LandingLayout } from '@/components/dispenser/landing-layout';
 import { DispenserLogo } from '@/components/dispenser/brand-logo';
-import { TokenDistributionChart } from '@/components/dispenser/token-distribution-chart';
 
 const USE_CASES = [
   'Community Rewards',
@@ -132,37 +130,6 @@ export default function Home() {
                   {item}
                 </span>
               ))}
-            </div>
-          </div>
-        </section>
-
-        <section id="token-distribution" className="border-t border-cyan-900/20 py-20 sm:py-24">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <div className="text-center mb-14">
-              <h2 className="text-2xl sm:text-3xl font-bold text-white">Token Distribution</h2>
-              <p className="mt-3 text-cyan-200 max-w-xl mx-auto">
-                A clear split: burn, dev, team, marketing, and community.
-              </p>
-            </div>
-            <div className="max-w-3xl mx-auto kd-glass-strong rounded-2xl p-8">
-              <TokenDistributionChart />
-            </div>
-          </div>
-        </section>
-
-        <section id="holder-rewards" className="border-t border-cyan-900/20 py-20 sm:py-24">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6">
-            <div className="max-w-2xl mx-auto kd-glass-strong rounded-2xl p-8 sm:p-10 text-center">
-              <div className="h-12 w-12 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center mx-auto mb-5">
-                <Gift className="h-6 w-6 text-cyan-400" />
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-bold text-white">Holder Rewards</h2>
-              <p className="mt-4 text-lg text-cyan-200 leading-relaxed">
-                Platform Fees &amp; Trade Fees are distributed back to eligible holders weekly.
-              </p>
-              <p className="mt-4 text-cyan-200 leading-relaxed">
-                Every transaction helps generate rewards for the KASDISTRO community.
-              </p>
             </div>
           </div>
         </section>
