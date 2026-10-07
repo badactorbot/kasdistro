@@ -8,6 +8,10 @@
       "maxDuration": 60,
       "includeFiles": "artifacts/api-server/deploy/**"
     },
+    "api/kaspa/build-pskt.js": {
+      "maxDuration": 60,
+      "includeFiles": "artifacts/api-server/deploy/**"
+    },
     "api/kron/token-holders/[identifier].ts": {
       "maxDuration": 60
     }
